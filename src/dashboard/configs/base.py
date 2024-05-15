@@ -328,9 +328,9 @@ CSRF_COOKIE_SECURE = True
 
 # Django Security Settings
 SECURE_HSTS_SECONDS = 15768000   # Strict-Transport-Security, 6 months
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SECURE_REFERRER_POLICY = 'same-origin'  # Referrer-Policy; django 1.9 not support
-# SECURE_CONTENT_TYPE_NOSNIFF = True  # X-Content-Type-Options
+SECURE_CONTENT_TYPE_NOSNIFF = True  # X-Content-Type-Options
 SECURE_BROWSER_XSS_FILTER = True    # X-XSS-Protection
 
 # Google Analytics

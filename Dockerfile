@@ -12,7 +12,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100
 
 RUN apt-get update \
-    && apt-get install -y gettext libgettextpo-dev
+    && apt-get install -y gettext libgettextpo-dev tesseract-ocr
 
 RUN useradd --create-home --home-dir /app --shell /bin/bash app
 

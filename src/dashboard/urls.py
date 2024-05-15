@@ -38,8 +38,8 @@ from .views import (
 urlpatterns = [
     # local apps
     url(r'^accounts/', include('apps.accounts.urls', namespace='accounts')),
-    url(r'^posts/', include('apps.posts.urls', namespace='posts')),
-    url(r'^comments/', include('apps.comments.urls', namespace='comments')),
+    # url(r'^posts/', include('apps.posts.urls', namespace='posts')),
+    # url(r'^comments/', include('apps.comments.urls', namespace='comments')),
     url(r'^events/', include('apps.events.urls', namespace='events')),
     url(r'^dailytrans/', include('apps.dailytrans.urls', namespace='dailytrans')),
     # i18n
@@ -92,6 +92,10 @@ urlpatterns += i18n_patterns(
 )
 
 if settings.DEBUG:
+    import debug_toolbar
+
+    urlpatterns += i18n_patterns(url(r"^__debug__/", include(debug_toolbar.urls)))
+    urlpatterns += [url(r"^__debug__/", include(debug_toolbar.urls))]
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

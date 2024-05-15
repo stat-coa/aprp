@@ -6,7 +6,7 @@ import datetime
 
 
 # set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dashboard.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dashboard.configs.base')
 
 app = Celery('dashboard')
 
@@ -30,11 +30,11 @@ app.conf.beat_schedule = {
         'task': 'DeleteNotUpdatedTrans',
         'schedule': crontab(minute=0, hour='*'),
     },
-    'update_daily_report': {
-        'task': 'UpdateDailyReport',
-        'schedule': crontab(minute='0,30', hour='0-11', day_of_week='1-5'),
-        'args': (-1,)  # Update yesterday's report
-    },
+    # 'update_daily_report': {
+    #     'task': 'UpdateDailyReport',
+    #     'schedule': crontab(minute='0,30', hour='0-11', day_of_week='1-5'),
+    #     'args': (-1,)  # Update yesterday's report
+    # },
     # ======================================== ShortTerm Builder ========================================
     'daily-chicken-builder-3d': {
         'task': 'DailyChickenBuilder',
@@ -93,7 +93,7 @@ app.conf.beat_schedule = {
     },
     'daily-seafood-origin-builder-3d': {
         'task': 'DailyOriginSeafoodBuilder',
-        'schedule': crontab(minute=0, hour='3,5,7,9'),
+        'schedule': crontab(minute=0, hour='10'),
         'args': (-4,)  # direct 5 day
     },
     # ======================================== 1 month Builder ========================================

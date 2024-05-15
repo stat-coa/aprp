@@ -1,0 +1,130 @@
+version: '3.9'
+
+services:
+  postgres:
+    container_name: apsvp-db
+    image: postgres:16-alpine
+    volumes:
+      - apsvp-pg-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - apsvp
+    restart: always
+
+  pgadmin:
+    container_name: apsvp-pgadmin
+    image: dpage/pgadmin4:8.6
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - apsvp-pg-admin:/root/.pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - apsvp
+
+  redis:
+    container_name: apsvp-redis
+    hostname: redis
+    image: redis:4.0
+    volumes:
+      - apsvp-redis-data:/data
+    networks:
+      - apsvp
+    restart: always
+
+  redis-commander:
+    container_name: apsvp-redis-commander
+    hostname: redis-commander
+    image: ghcr.io/joeferner/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8085:8081"
+    depends_on:
+      - "redis"
+    networks:
+      - apsvp
+
+  apsvp: &web
+    container_name: apsvp
+    build:
+      context: .
+      target: prod
+    env_file:
+      - .env
+#    expose:
+#      - 80
+#      - 443
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./src:/app
+    entrypoint: /app/scripts/entrypoint.sh
+    command: >
+      gunicorn -w 4 -b 0.0.0.0:8000 \
+      --access-logfile - \
+      --error-logfile - \
+      --max-requests 1000 \
+      --max-requests-jitter 100 \
+      dashboard.wsgi
+    restart: always
+    networks:
+      - apsvp
+      - gateway
+
+  worker:
+    <<: *web
+    container_name: apsvp-worker
+    ports: [ ]
+    command:
+      - "python"
+      - "manage.py"
+      - "start_celery_worker"
+
+  beat:
+    <<: *web
+    container_name: apsvp-beat
+    ports: [ ]
+    command:
+      - "python"
+      - "manage.py"
+      - "start_celery_beat"
+
+  flower:
+    container_name: apsvp-flower
+    image: mher/flower
+    ports:
+      - "49555:5555"
+    networks:
+      - apsvp
+    depends_on:
+      - worker
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+
+  notebook:
+    <<: *web
+    container_name: apsvp-notebook
+    command:
+      - python
+      - manage.py
+      - shell_plus
+      - --notebook
+    ports:
+      - "8888:8888"
+
+volumes:
+  apsvp-pg-data:
+  apsvp-redis-data:
+  apsvp-pg-admin:
+
+networks:
+  apsvp:
+  gateway:
+    external: true

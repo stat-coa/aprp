@@ -7,4 +7,4 @@ db_logger = logging.getLogger('aprp')
 
 @task(name="Beat")
 def beat(params):
-    print(params)
+    print(f'beat params: {params}')

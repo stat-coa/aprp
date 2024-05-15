@@ -11,9 +11,9 @@ env = environ.Env()
 if os.path.exists(BASE_DIR('.env')):
     environ.Env.read_env(BASE_DIR('.env'))
 
-SECRET_KEY = env.str('SECRET_KEY', 'my-secret-key')
+SECRET_KEY = env.str('SECRET_KEY')
 
-DEBUG = env.bool('DEBUG', False)
+DEBUG = env.bool('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
@@ -59,8 +59,8 @@ INSTALLED_APPS = [
     'apps.cattles',
     'apps.dailytrans',
     'apps.watchlists',
-    'apps.posts',
-    'apps.comments',
+    # 'apps.posts',
+    # 'apps.comments',
     'apps.events',
     'apps.logs',
     'apps.feed',
@@ -230,7 +230,7 @@ STATIC_ROOT = str(BASE_DIR("live-static-files", "static-root"))
 STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
 MEDIA_URL = "/media/"
 MEDIA_ROOT = str(BASE_DIR("live-static-files", "media-root"))
-
+#
 SERVE_MEDIA_FILES = False  # make whitenoise serving media files
 
 # All-auth
@@ -245,6 +245,34 @@ LOGIN_URL = '/accounts/login/'
 # Crispy
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
+# Fixtures
+
+FIXTURE_DIRS = [
+    str(BASE_DIR('fixtures')),
+    str(BASE_DIR('fixtures/rices')),
+    str(BASE_DIR('fixtures/crops')),
+    str(BASE_DIR('fixtures/crops/origin')),
+    str(BASE_DIR('fixtures/crops/wholesale')),
+    str(BASE_DIR('fixtures/fruits')),
+    str(BASE_DIR('fixtures/fruits/origin')),
+    str(BASE_DIR('fixtures/fruits/wholesale')),
+    str(BASE_DIR('fixtures/flowers/wholesale')),
+    str(BASE_DIR('fixtures/hogs')),
+    str(BASE_DIR('fixtures/rams')),
+    str(BASE_DIR('fixtures/chickens')),
+    str(BASE_DIR('fixtures/ducks')),
+    str(BASE_DIR('fixtures/gooses')),
+    str(BASE_DIR('fixtures/seafoods/origin')),
+    str(BASE_DIR('fixtures/seafoods/wholesale')),
+    str(BASE_DIR('fixtures/cattles')),
+    str(BASE_DIR('fixtures/watchlists')),
+    str(BASE_DIR('fixtures/events')),
+    str(BASE_DIR('fixtures/festivals')),
+    str(BASE_DIR('fixtures/feed')),
+    str(BASE_DIR('fixtures/naifchickens')),
+    str(BASE_DIR('fixtures/last5years')),
+]
 
 # Rest-framework
 
@@ -271,6 +299,44 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+CELERY_IMPORTS = (
+    'dashboard.tasks',
+    'apps.rices.tasks',
+    'apps.crops.tasks',
+    'apps.fruits.tasks',
+    'apps.hogs.tasks',
+    'apps.rams.tasks',
+    'apps.chickens.tasks',
+    'apps.ducks.tasks',
+    'apps.gooses.tasks',
+    'apps.seafoods.tasks',
+    'apps.cattles.tasks',
+    'apps.watchlists.tasks',
+    'apps.dailytrans.tasks',
+    'apps.feed.tasks',
+    'apps.naifchickens.tasks',
+)
+
+# Session Settings
+SESSION_COOKIE_AGE = 60 * 60 * 2
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_HTTPONLY = True   #   disable for csrf token post 403 error
+CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SAMESITE = 'None'  # django 1.9 not support
+# CSRF_COOKIE_SAMESITE = 'None'     # django 1.9 not support
+
+# Django Security Settings
+SECURE_HSTS_SECONDS = 15768000   # Strict-Transport-Security, 6 months
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_REFERRER_POLICY = 'same-origin'  # Referrer-Policy; django 1.9 not support
+# SECURE_CONTENT_TYPE_NOSNIFF = True  # X-Content-Type-Options
+SECURE_BROWSER_XSS_FILTER = True    # X-XSS-Protection
+
+# Google Analytics
+USE_GA = env.bool('USE_GA', default=False)
+GA_TRACKING_ID = env.str('GA_TRACKING_ID', default='')
+
 # Email Backend
 EMAIL_BACKEND = env.str('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = env.str('EMAIL_HOST', default='smtp.gmail.com')
@@ -283,7 +349,6 @@ DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='')
 ADMINS = [(user, user) for user in env.list('ADMINS', default=[])]
 
 # Password limits
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -298,6 +363,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
 ]
+
+# Aprp Release Version
+APRP_VERSION = '19.11.0'
 
 # API urls
 DAILYTRAN_BUILDER_API = {
@@ -319,6 +387,9 @@ DAILYTRAN_BUILDER_API = {
     'feed': 'https://www.naif.org.tw/memberLogin.aspx?frontTitleMenuID=105',   #飼料和環南市場雞隻等數據是從中央畜產會登入帳號爬蟲取得
     'naifchickens': 'https://www.naif.org.tw/memberLogin.aspx?frontTitleMenuID=105',   #飼料和環南市場雞隻等數據是從中央畜產會登入帳號爬蟲取得
 }
+
+# Hide login
+DJANGO_ADMIN_PATH = env.str('DJANGO_ADMIN_PATH', default='admin')
 
 # Google Drive
 

@@ -2,8 +2,8 @@ version: '3.9'
 
 services:
   postgres:
-    container_name: postgres
-    image: postgres:10-alpine
+    container_name: aprp-postgres
+    image: postgres:14-alpine
     volumes:
       - pg-data:/var/lib/postgresql/data
     expose:
@@ -17,8 +17,8 @@ services:
       - main
 
   pgadmin:
-    container_name: pgadmin
-    image: dpage/pgadmin4:8.3
+    container_name: aprp-pgadmin
+    image: dpage/pgadmin4:8.6
     environment:
       PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   redis:
-    container_name: redis
+    container_name: aprp-redis
     hostname: redis
     image: redis:4.0
     volumes:
@@ -51,7 +51,7 @@ services:
       - "redis"
     networks:
       - main
-    restart: always
+    restart: on-failure
 
   web: &web
     container_name: web
@@ -65,10 +65,10 @@ services:
       - POSTGRES_PASSWORD=postgres
       - SECRET_KEY=qd!xxe%zu_this_%8j$is_@#)$_dev_@#%%%_secret_key%)^
       - DEBUG=True
-      - DJANGO_SETTINGS_MODULE=dashboard.settings.development
+      - DJANGO_SETTINGS_MODULE=dashboard.configs.development
       - JUPYTER_ALLOW_INSECURE_WRITES=1
       - REDIS_HOST=redis
-      - PID_FILE=/opt/celeryd.pid
+      - PID_FILE=/app/celeryd.pid
     ports:
       - "8000:8000"
     depends_on:
@@ -76,13 +76,12 @@ services:
       - redis
     volumes:
       - ./src:/app
-    entrypoint: ./scripts/entrypoint.sh
+    entrypoint: /app/scripts/entrypoint.sh
     command:
       - "python"
       - "manage.py"
       - "runserver"
       - "0.0.0.0:8000"
-    restart: on-failure
     networks:
       - main
 

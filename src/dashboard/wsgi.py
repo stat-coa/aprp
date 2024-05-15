@@ -8,9 +8,12 @@ https://docs.djangoproject.com/en/1.9/howto/deployment/wsgi/
 """
 
 import os
-
+from django.conf import settings
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dashboard.settings")
+if settings.DEBUG:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dashboard.configs.development")
+else:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dashboard.configs.base")
 
 application = get_wsgi_application()

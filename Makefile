@@ -10,6 +10,7 @@ JUPYTER_NOTEBOOK_SERVICE_NAME = notebook
 MAIL_HOG_SERVICE_NAME = mailhog
 BEAT_SERVICE_NAME = beat
 WORKER_SERVICE_NAME = worker
+FLOWER_SERVICE_NAME = flower
 
 ## -- docker targets --
 
@@ -52,6 +53,9 @@ up-redis-commander:
 up-web:
 	docker-compose -f docker-compose.dev.yml up ${DJANGO_SERVICE_NAME} -d
 
+## run web-prod service
+up-web-prod:
+	docker-compose -f docker-compose.prod.yml up apsvp -d
 
 ## run beat service
 up-beat:
@@ -60,6 +64,10 @@ up-beat:
 ## run worker service
 up-worker:
 	docker-compose -f docker-compose.dev.yml up ${WORKER_SERVICE_NAME} -d
+
+## run flower service
+up-flower:
+	docker-compose -f docker-compose.dev.yml up ${FLOWER_SERVICE_NAME} -d
 
 ## run jupyter service
 up-jupyter:
@@ -82,12 +90,24 @@ down-dev:
 
 ## test web service
 test:
-	docker-compose -f docker-compose.dev.yml run --rm ${DJANGO_SERVICE_NAME} pytest
+	docker-compose -f docker-compose.dev.yml run --rm ${DJANGO_SERVICE_NAME} pytest -v
 
 ## make migrations in web service
 migrate:
 	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} python manage.py makemigrations
 	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} python manage.py migrate
+
+## create i18n messages in web service
+locale:
+	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} python manage.py makemessages -l zh_Hant
+
+## update i18n messages in web service
+make-messages:
+	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} django-admin makemessages
+
+## compile i18n messages in web service
+compile-messages:
+	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} django-admin compilemessages
 
 ## run pytest-cov with web service
 pytest-cov:

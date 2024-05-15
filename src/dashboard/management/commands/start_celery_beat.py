@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 from django.utils import autoreload
 
 
-PIDFILE = os.environ.get("PIDFILE", "/opt/celeryd.pid")
+PIDFILE = os.environ.get("PIDFILE", "/app/celeryd.pid")
 
 
 def restart_celery_beat(*args, **kwargs):

@@ -35,12 +35,13 @@ def get_query_set(_type, items, sources=None):
     product_ids.update({item.id for item in items if isinstance(item, AbstractProduct)})
 
     # source_ids = set(source.id for source in sources) if sources else None
-
     if not sources:
         sources = set([source for item in items if isinstance(item, WatchlistItem) for source in item.sources.all()])
         sources.update(set([source for item in items if isinstance(item, AbstractProduct) for source in item.sources()]))
 
-    query = DailyTran.objects.filter(product__type=_type, product_id__in=product_ids, source__in=sources)
+    query = DailyTran.objects.filter(product__type=_type, product_id__in=product_ids)
+    if sources:
+        query = query.filter(source__in=sources)
 
     return query
 
@@ -74,7 +75,7 @@ def get_group_by_date_query_set(query_set, start_date=None, end_date=None, speci
         year=Year('date'),
         month=Month('date'),
         day=Day('date'),
-        source_for_cal = Value(1, IntegerField()))
+        source_for_cal=Value(1, IntegerField()))
 
     volume_for_cal = Case(
         When(volume__isnull=True, then=1),
@@ -89,25 +90,25 @@ def get_group_by_date_query_set(query_set, start_date=None, end_date=None, speci
     )
 
     q = query_set.annotate(
-        avg_price=Sum(F('avg_price') * volume_for_cal * weight_for_cal * F('source_for_cal')) / Sum(volume_for_cal * weight_for_cal * F('source_for_cal')),
+        avg_price=Sum(F('avg_price') * volume_for_cal * weight_for_cal * F('source_for_cal')) / Sum(
+            volume_for_cal * weight_for_cal * F('source_for_cal')),
         sum_volume=Sum(volume_for_cal),
         avg_avg_weight=Sum(weight_for_cal * volume_for_cal) / Sum(volume_for_cal),
-        sum_source = Sum('source_for_cal')
+        sum_source=Sum('source_for_cal')
     )
 
     if not has_volume and not has_weight:
-        q = q.values('date','year','month','day','avg_price','sum_source')
+        q = q.values('date', 'year', 'month', 'day', 'avg_price', 'sum_source')
     elif not has_weight:
-        q = q.values('date','year','month','day','avg_price','sum_volume','sum_source')
+        q = q.values('date', 'year', 'month', 'day', 'avg_price', 'sum_volume', 'sum_source')
 
     # Order by date
     q = q.order_by('date')
 
-    return q, has_volume, has_weight    
+    return q, has_volume, has_weight
 
 
 def get_daily_price_volume(_type, items, sources=None, start_date=None, end_date=None):
-
     query_set = get_query_set(_type, items, sources)
 
     q, has_volume, has_weight = get_group_by_date_query_set(query_set, start_date, end_date)
@@ -198,7 +199,6 @@ def get_daily_price_volume(_type, items, sources=None, start_date=None, end_date
 
 
 def get_daily_price_by_year(_type, items, sources=None):
-
     def get_result(key):
         # Get years
         years = [date.year for date in query_set.dates('date', 'year')]
@@ -264,7 +264,7 @@ def get_daily_price_by_year(_type, items, sources=None):
 
     # default select last 5 years
     def selected_year(y):
-        return this_year in years and this_year > y >= datetime.date.today().year-5
+        return this_year in years and this_year > y >= datetime.date.today().year - 5
 
     response_data['years'] = [(year, selected_year(year)) for year in years]
 
@@ -294,7 +294,7 @@ def annotate_avg_price(df, key):
         avg_price = group['avg_price']
         sum_volume = group['sum_volume']
         return (avg_price * sum_volume).sum() / sum_volume.sum()
-    
+
     def by_source(group):
         avg_price = group['avg_price']
         sum_source = group['sum_source']
@@ -327,7 +327,6 @@ def annotate_avg_weight(df, key):
 
 
 def get_monthly_price_distribution(_type, items, sources=None, selected_years=None):
-
     def get_result(key):
         highchart_data = {}
         raw_data = {}
@@ -415,6 +414,7 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
     :param to_init: to render table if true; to render rows if false
     :return:
     """
+
     def spark_point_maker(qs, add_unix=True):
         """
         :param qs: Query after annotation
@@ -445,15 +445,15 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
     def pandas_annotate_year(qs, has_volume, has_weight, start_date=None, end_date=None):
         df = DataFrame(list(qs))
         if start_date and end_date and start_date.year != end_date.year:
-            df_list=[]
+            df_list = []
             if has_volume and has_weight:
                 df['avg_price'] = df['avg_price'] * df['sum_volume'] * df['avg_avg_weight']
                 df['sum_volume_weight'] = df['sum_volume'] * df['avg_avg_weight']
-                for i in range(1, start_date.year-q.first()['year']+1):
+                for i in range(1, start_date.year - q.first()['year'] + 1):
                     splitted_df = df[
-                        (df['date']>=datetime.date(start_date.year-i, start_date.month, start_date.day))\
-                            &(df['date']<=datetime.date(end_date.year-i, end_date.month, end_date.day))\
-                                ].mean()
+                        (df['date'] >= datetime.date(start_date.year - i, start_date.month, start_date.day)) \
+                        & (df['date'] <= datetime.date(end_date.year - i, end_date.month, end_date.day)) \
+                        ].mean()
                     splitted_df['year'] = start_date.year - i
                     splitted_df['end_year'] = end_date.year - i
                     df_list.append(splitted_df)
@@ -461,11 +461,11 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
                 df['avg_price'] = df['avg_price'] / df['sum_volume_weight']
             elif has_volume:
                 df['avg_price'] = df['avg_price'] * df['sum_volume']
-                for i in range(1, start_date.year-q.first()['year']+1):
+                for i in range(1, start_date.year - q.first()['year'] + 1):
                     splitted_df = df[
-                        (df['date']>=datetime.date(start_date.year-i, start_date.month, start_date.day))\
-                            &(df['date']<=datetime.date(end_date.year-i, end_date.month, end_date.day))\
-                                ].mean()
+                        (df['date'] >= datetime.date(start_date.year - i, start_date.month, start_date.day)) \
+                        & (df['date'] <= datetime.date(end_date.year - i, end_date.month, end_date.day)) \
+                        ].mean()
                     splitted_df['year'] = start_date.year - i
                     splitted_df['end_year'] = end_date.year - i
                     df_list.append(splitted_df)
@@ -473,17 +473,17 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
                 df['avg_price'] = df['avg_price'] / df['sum_volume']
             else:
                 df['avg_price'] = df['avg_price'] * df['sum_source']
-                for i in range(1, start_date.year-q.first()['year']+1):
+                for i in range(1, start_date.year - q.first()['year'] + 1):
                     splitted_df = df[
-                        (df['date']>=datetime.date(start_date.year-i, start_date.month, start_date.day))\
-                            &(df['date']<=datetime.date(end_date.year-i, end_date.month, end_date.day))\
-                                ].mean()
+                        (df['date'] >= datetime.date(start_date.year - i, start_date.month, start_date.day)) \
+                        & (df['date'] <= datetime.date(end_date.year - i, end_date.month, end_date.day)) \
+                        ].mean()
                     splitted_df['year'] = start_date.year - i
                     splitted_df['end_year'] = end_date.year - i
                     df_list.append(splitted_df)
                 df = pd.concat(df_list, axis=1).T
                 df['avg_price'] = df['avg_price'] / df['sum_source']
-        else:    
+        else:
             if has_volume and has_weight:
                 df['avg_price'] = df['avg_price'] * df['sum_volume'] * df['avg_avg_weight']
                 df['sum_volume_weight'] = df['sum_volume'] * df['avg_avg_weight']
@@ -531,14 +531,14 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
 
         # if same year do this -> generate the data in the last 5 year. 
         # if start_date.year == end_date.year:
-            # q_fy: recent five years
+        # q_fy: recent five years
         # 主任想看到跨年度資料的歷年比較，故取消這條件判斷
-        q_fy = query_set.filter(date__gte=datetime.datetime(start_date.year-5, start_date.month, start_date.day), \
-                                date__lte=datetime.datetime(end_date.year-1, end_date.month, end_date.day))
+        q_fy = query_set.filter(date__gte=datetime.datetime(start_date.year - 5, start_date.month, start_date.day), \
+                                date__lte=datetime.datetime(end_date.year - 1, end_date.month, end_date.day))
         q_fy, has_volume_fy, has_weight_fy = get_group_by_date_query_set(q_fy,
-                                                                            start_date=start_date,
-                                                                            end_date=end_date,
-                                                                            specific_year=False)
+                                                                         start_date=start_date,
+                                                                         end_date=end_date,
+                                                                         specific_year=False)
 
         if q.count() > 0:
             data_this = pandas_annotate_init(q)
@@ -577,8 +577,6 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
                                                                 start_date=start_date,
                                                                 end_date=end_date,
                                                                 specific_year=False)
-        
-            
 
         if q.count() > 0 and start_date.year == end_date.year:
             data_all = pandas_annotate_year(q, has_volume, has_weight)
@@ -598,8 +596,8 @@ def get_integration(_type, items, start_date, end_date, sources=None, to_init=Tr
             for dic in data_all:
                 start_year = int(dic['year'])
                 end_year = int(dic['end_year'])
-                q_filter_by_year = q.filter(date__gte=datetime.date(start_year, start_date.month, start_date.day),\
-                                                date__lte=datetime.date(end_year, end_date.month, end_date.day))
+                q_filter_by_year = q.filter(date__gte=datetime.date(start_year, start_date.month, start_date.day), \
+                                            date__lte=datetime.date(end_year, end_date.month, end_date.day))
                 dic['name'] = '{}~{}'.format(start_year, end_year)
                 dic['points'] = spark_point_maker(q_filter_by_year)
                 dic['base'] = False
@@ -646,6 +644,7 @@ class RawAnnotation(RawSQL):
     RawSQL also aggregates the SQL to the `group by` clause which defeats the purpose of adding it to an Annotation.
     See: https://medium.com/squad-engineering/hack-django-orm-to-calculate-median-and-percentiles-or-make-annotations-great-again-23d24c62a7d0
     """
+
     def get_group_by_cols(self):
         return []
 

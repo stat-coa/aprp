@@ -22,11 +22,15 @@ from .models import (
     ResetEmailProfile
 )
 import logging
+from django.conf import settings
 
 User = get_user_model()
 
 
 def login_view(request):
+    if settings.DEBUG:
+        print(f'ip: {request.META["REMOTE_ADDR"]}')
+    
     form = UserLoginForm(request.POST or None)
     content = {
         'form': form

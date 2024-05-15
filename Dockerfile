@@ -33,3 +33,8 @@ FROM base as dev
 RUN pip install -r requirements/dev.txt
 RUN pip install -r requirements/test.txt
 USER app
+
+# Production image
+FROM base as prod
+RUN pip install -r requirements/prod.txt
+USER app

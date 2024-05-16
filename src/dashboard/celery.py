@@ -18,6 +18,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app
 app.autodiscover_tasks()
 
+# Add the following line to enable the workaround
+app.conf.beat_max_loop_interval = 0
+
 _ = lambda x: str(24 - (abs(x - 8))) if x < 8 else str(x - 8)
 
 app.conf.beat_schedule = {

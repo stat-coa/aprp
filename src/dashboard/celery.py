@@ -4,7 +4,6 @@ from celery import Celery
 from celery.schedules import crontab
 import datetime
 
-
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dashboard.configs.base')
 
@@ -19,6 +18,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app
 app.autodiscover_tasks()
 
+_ = lambda x: str(24 - (abs(x - 8))) if x < 8 else str(x - 8)
 
 app.conf.beat_schedule = {
     # ======================================== Job ========================================
@@ -73,31 +73,31 @@ app.conf.beat_schedule = {
     },
     'daily-flower-builder-3d': {
         'task': 'DailyFlowerBuilder',
-        'schedule': crontab(minute=20, hour='*'),
+        'schedule': crontab(minute=20, hour=f'{_(8)}-{_(19)}'),
         'args': (-3,)  # direct 3 day
     },
     'daily-crop-builder-3d': {
         'task': 'DailyCropBuilder',
-        'schedule': crontab(minute=30, hour='*'),
+        'schedule': crontab(minute=30, hour=f'{_(8)}-{_(19)}'),
         'args': (-3,)  # direct 3 day
     },
     'daily-fruit-builder-3d': {
         'task': 'DailyFruitBuilder',
-        'schedule': crontab(minute=40, hour='*'),
+        'schedule': crontab(minute=40, hour=f'{_(8)}-{_(19)}'),
         'args': (-3,)  # direct 3 day
     },
     'daily-seafood-wholesale-builder-3d': {
         'task': 'DailyWholesaleSeafoodBuilder',
-        'schedule': crontab(minute=50, hour='*'),
+        'schedule': crontab(minute=50, hour=f'{_(8)}-{_(19)}'),
         'args': (-3,)  # direct 3 day
     },
     'daily-seafood-origin-builder-3d': {
         'task': 'DailyOriginSeafoodBuilder',
-        'schedule': crontab(minute=0, hour='10'),
+        'schedule': crontab(minute=15, hour=f'{_(11)},{_(13)}'),
         'args': (-4,)  # direct 5 day
     },
     # ======================================== 1 month Builder ========================================
-        'daily-feed-builder-31d': {
+    'daily-feed-builder-31d': {
         'task': 'DailyFeedBuilder',
         'schedule': crontab(minute=10, hour='1,9'),
         'args': (-1,)  # direct 1 days range    因飼料網頁編排一次就會抓同一個月份的資料
@@ -144,22 +144,22 @@ app.conf.beat_schedule = {
     },
     'daily-flower-builder-31d': {
         'task': 'DailyFlowerBuilder',
-        'schedule': crontab(minute=0, hour='16'),
+        'schedule': crontab(minute=0, hour=_(0), day_of_week='saturday'),
         'args': (-30,)  # direct 31 days range
     },
     'daily-crop-builder-31d': {
         'task': 'DailyCropBuilder',
-        'schedule': crontab(minute=0, hour='17'),
+        'schedule': crontab(minute=0, hour=_(1), day_of_week='saturday'),
         'args': (-30,)  # direct 31 days range
     },
     'daily-fruit-builder-31d': {
         'task': 'DailyFruitBuilder',
-        'schedule': crontab(minute=0, hour='18'),
+        'schedule': crontab(minute=0, hour=_(2), day_of_week='sunday'),
         'args': (-30,)  # direct 31 days range
     },
     'daily-seafood-wholesale-builder-31d': {
         'task': 'DailyWholesaleSeafoodBuilder',
-        'schedule': crontab(minute=0, hour='20'),
+        'schedule': crontab(minute=0, hour=_(4), day_of_week='sunday'),
         'args': (-30,)  # direct 31 days range
     },
     'beat-per-minute': {

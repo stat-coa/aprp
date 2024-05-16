@@ -27,14 +27,15 @@ COPY src/requirements/base.txt \
 RUN pip install -r requirements/base.txt
 
 ADD src .
+RUN chown -R root:root .
 
 # Development image
 FROM base as dev
 RUN pip install -r requirements/dev.txt
 RUN pip install -r requirements/test.txt
-USER app
+USER root
 
 # Production image
 FROM base as prod
 RUN pip install -r requirements/prod.txt
-USER app
+USER root

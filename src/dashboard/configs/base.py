@@ -130,6 +130,9 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'apps.logs.db_log_handler.DatabaseLogHandler'
         },
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
     },
     'loggers': {
         'db': {
@@ -139,8 +142,12 @@ LOGGING = {
         'aprp': {
             'handlers': ['aprp_log'],
             'level': 'DEBUG'
-        }
-    }
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
 }
 
 

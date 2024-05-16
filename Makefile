@@ -35,11 +35,11 @@ config:
 
 ## run postgres service
 up-postgres:
-	docker-compose -f docker-compose.dev.yml up ${DATABASE_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${DATABASE_SERVICE_NAME} -d
 
 ## run pgadmin service
 up-pgadmin:
-	docker-compose -f docker-compose.dev.yml up ${PGADMIN_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${PGADMIN_SERVICE_NAME} -d
 
 ## run redis service
 up-redis:
@@ -47,7 +47,7 @@ up-redis:
 
 ## run web service
 up-redis-commander:
-	docker-compose -f docker-compose.dev.yml up ${REDIS_COMMANDER_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${REDIS_COMMANDER_SERVICE_NAME} -d
 
 ## run web service
 up-web:
@@ -59,19 +59,19 @@ up-web-prod:
 
 ## run beat service
 up-beat:
-	docker-compose -f docker-compose.dev.yml up ${BEAT_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${BEAT_SERVICE_NAME} -d
 
 ## run worker service
 up-worker:
-	docker-compose -f docker-compose.dev.yml up ${WORKER_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${WORKER_SERVICE_NAME} -d
 
 ## run flower service
 up-flower:
-	docker-compose -f docker-compose.dev.yml up ${FLOWER_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${FLOWER_SERVICE_NAME} -d
 
 ## run jupyter service
 up-jupyter:
-	docker-compose -f docker-compose.dev.yml up ${JUPYTER_NOTEBOOK_SERVICE_NAME} -d
+	docker-compose -f docker-compose.prod.yml up ${JUPYTER_NOTEBOOK_SERVICE_NAME} -d
 
 ## run mail service
 up-mail:
@@ -99,15 +99,15 @@ migrate:
 
 ## create i18n messages in web service
 locale:
-	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} python manage.py makemessages -l zh_Hant
+	docker-compose -f docker-compose.prod.yml exec apsvp python manage.py makemessages -l zh_Hant
 
 ## update i18n messages in web service
 make-messages:
-	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} django-admin makemessages
+	docker-compose -f docker-compose.prod.yml exec apsvp django-admin makemessages
 
 ## compile i18n messages in web service
 compile-messages:
-	docker-compose -f docker-compose.dev.yml exec ${DJANGO_SERVICE_NAME} django-admin compilemessages
+	docker-compose -f docker-compose.dev.yml exec apsvp django-admin compilemessages
 
 ## run pytest-cov with web service
 pytest-cov:

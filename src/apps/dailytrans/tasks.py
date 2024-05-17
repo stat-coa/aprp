@@ -28,36 +28,8 @@ def delete_not_updated_trans(not_updated_times=15):
 
 @task(name='UpdateDailyReport')
 def update_daily_report(delta_days=-1):
-    folder_id = settings.DAILY_REPORT_FOLDER_ID
-    google_drive_client = DefaultGoogleDriveClient()
-
-    date = datetime.today() + timedelta(days=delta_days)
+    date = datetime.now() + timedelta(days=delta_days)
 
     # generate file
     factory = DailyReportFactory(specify_day=date)
     file_name, file_path = factory()
-
-    daily_report = DailyReport.objects.filter(date=date).first()
-    if not daily_report:
-        # upload file
-        response = google_drive_client.media_upload(
-            name=file_name,
-            file_path=file_path,
-            from_mimetype=google_drive_client.XLSX_MIME_TYPE,
-            parents=[folder_id],
-        )
-        file_id = response.get('id')
-        google_drive_client.set_public_permission(file_id)
-        # write result to database
-        DailyReport.objects.create(date=date, file_id=file_id)
-    else:
-        google_drive_client.media_update(
-            file_id=daily_report.file_id,
-            file_path=file_path,
-            from_mimetype=google_drive_client.XLSX_MIME_TYPE
-        )
-        daily_report.update_time = datetime.now()
-        daily_report.save()
-
-    # remove local file
-    os.remove(file_path)

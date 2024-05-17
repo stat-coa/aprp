@@ -21,8 +21,6 @@ app.autodiscover_tasks()
 # Add the following line to enable the workaround
 app.conf.beat_max_loop_interval = 0
 
-_ = lambda x: str(24 - (abs(x - 8))) if x < 8 else str(x - 8)
-
 app.conf.beat_schedule = {
     # ======================================== Job ========================================
     'monitor_profile_active_update': {
@@ -76,27 +74,27 @@ app.conf.beat_schedule = {
     },
     'daily-flower-builder-3d': {
         'task': 'DailyFlowerBuilder',
-        'schedule': crontab(minute=20, hour=f'{_(8)}-{_(19)}'),
+        'schedule': crontab(minute=20, hour='8-18'),
         'args': (-3,)  # direct 3 day
     },
     'daily-crop-builder-3d': {
         'task': 'DailyCropBuilder',
-        'schedule': crontab(minute=30, hour=f'{_(8)}-{_(19)}'),
+        'schedule': crontab(minute=30, hour='8-18'),
         'args': (-3,)  # direct 3 day
     },
     'daily-fruit-builder-3d': {
         'task': 'DailyFruitBuilder',
-        'schedule': crontab(minute=40, hour=f'{_(8)}-{_(19)}'),
+        'schedule': crontab(minute=40, hour='8-18'),
         'args': (-3,)  # direct 3 day
     },
     'daily-seafood-wholesale-builder-3d': {
         'task': 'DailyWholesaleSeafoodBuilder',
-        'schedule': crontab(minute=50, hour=f'{_(8)}-{_(19)}'),
+        'schedule': crontab(minute=50, hour='8-18'),
         'args': (-3,)  # direct 3 day
     },
     'daily-seafood-origin-builder-3d': {
         'task': 'DailyOriginSeafoodBuilder',
-        'schedule': crontab(minute=15, hour=f'{_(11)},{_(13)}'),
+        'schedule': crontab(minute=15, hour='8-18'),
         'args': (-4,)  # direct 5 day
     },
     # ======================================== 1 month Builder ========================================
@@ -147,22 +145,22 @@ app.conf.beat_schedule = {
     },
     'daily-flower-builder-31d': {
         'task': 'DailyFlowerBuilder',
-        'schedule': crontab(minute=0, hour=_(0), day_of_week='saturday'),
+        'schedule': crontab(minute=0, hour='0', day_of_week='saturday'),
         'args': (-30,)  # direct 31 days range
     },
     'daily-crop-builder-31d': {
         'task': 'DailyCropBuilder',
-        'schedule': crontab(minute=0, hour=_(1), day_of_week='saturday'),
+        'schedule': crontab(minute=0, hour='4', day_of_week='saturday'),
         'args': (-30,)  # direct 31 days range
     },
     'daily-fruit-builder-31d': {
         'task': 'DailyFruitBuilder',
-        'schedule': crontab(minute=0, hour=_(2), day_of_week='sunday'),
+        'schedule': crontab(minute=0, hour='2', day_of_week='sunday'),
         'args': (-30,)  # direct 31 days range
     },
     'daily-seafood-wholesale-builder-31d': {
         'task': 'DailyWholesaleSeafoodBuilder',
-        'schedule': crontab(minute=0, hour=_(4), day_of_week='sunday'),
+        'schedule': crontab(minute=0, hour='6', day_of_week='sunday'),
         'args': (-30,)  # direct 31 days range
     },
     'beat-per-minute': {

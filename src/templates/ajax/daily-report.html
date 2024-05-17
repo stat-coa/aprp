@@ -9,7 +9,7 @@
 
 			<!-- PAGE HEADER -->
 			<i class="fa-fw fa fa-home"></i>
-				{% trans 'Main' %}
+			{% trans 'Main' %}
 			<span>>
 				{% trans 'Daily Report' %}
 			</span>
@@ -34,14 +34,14 @@
 </div>
 
 
-<div id="daily-report-container" data-load data-load-url="{% url 'dailytrans:render_daily_report' %}"></div>
+<div id="daily-report-container" data-load data-load-url="{% url 'dailytrans:download_daily_report' %}"></div>
 
 <script>
 
-	pageSetUp();
+    pageSetUp();
 
-	pagefunction = function(){
-	    // Default to yesterday
+    pagefunction = function () {
+        // Default to yesterday
         var d = new Date();
         var yesterday = d.addDays(-1);
 
@@ -50,15 +50,16 @@
         $input = $('#daily-report-date')
 
         $input.datepicker({
-            dateFormat : 'yy/mm/dd',
+            dateFormat: 'yy/mm/dd',
             defaultDate: -1,
-        }).datepicker( "setDate", yesterday );
+        }).datepicker("setDate", yesterday);
 
-        $('#daily-report-date-submit').on('click', function(e){
+        $('#daily-report-date-submit').on('click', function (e) {
             var $container = $('#daily-report-container');
             var url = $container.attr('data-load-url');
 
             var date = $input.datepicker('getDate');
+
 
             data = {
                 'day': date.getDate(),
@@ -66,9 +67,55 @@
                 'year': date.getFullYear(),
             }
 
-            loadURL(url, $container, data, "POST");
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: data,
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                cache: true,
+                beforeSend: function (xhr, settings) {
+                    // CSRF token
+                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+                    }
+
+                    $container.removeData().html("");
+
+                    // place cog
+                    $container.html('<h1 class="ajax-loading-animation"><i class="fa fa-cog fa-spin"></i> '
+		                    + '報表產生中，請稍後' + '...</h1>');
+                },
+                success: function (data, status, xhr) {
+                    $container.removeData().html("");
+                    const blob = new Blob([data], {type: 'application/octetstream'});
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    let filename = 'data.xlsx';
+
+                    const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+
+                    if (contentDisposition) {
+                        let filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                        if (filenameMatch && filenameMatch.length === 2) {
+                            filename = decodeURIComponent(filenameMatch[1]);
+                        }
+                    }
+
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: function (xhr, status, error) {
+                    console.log(error);
+                }
+            });
         })
-	}
+    }
 
     // PAGE RELATED SCRIPTS
 

@@ -498,7 +498,7 @@ class DailyReportFactory(object):
 
         return wb
 
-    def __call__(self, output_dir=settings.BASE_DIR):
+    def __call__(self, output_dir=settings.BASE_DIR('apps/dailytrans/reports')):
         date = self.specify_day + datetime.timedelta(1)
         file_name = '{}-{}價格{}.xlsx'.format(
             self.roc_date_format(self.this_week_start),

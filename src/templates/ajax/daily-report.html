@@ -38,88 +38,107 @@
 
 <script>
 
-    pageSetUp();
+  pageSetUp();
 
-    pagefunction = function () {
-        // Default to yesterday
-        var d = new Date();
-        var yesterday = d.addDays(-1);
+  pagefunction = function () {
+    // Default to yesterday
+    var d = new Date();
+    var yesterday = d.addDays(-1);
 
-        yesterday = $.datepicker.formatDate('yy/mm/dd', yesterday);
+    yesterday = $.datepicker.formatDate('yy/mm/dd', yesterday);
 
-        $input = $('#daily-report-date')
+    $input = $('#daily-report-date')
 
-        $input.datepicker({
-            dateFormat: 'yy/mm/dd',
-            defaultDate: -1,
-        }).datepicker("setDate", yesterday);
+    $input.datepicker({
+      dateFormat: 'yy/mm/dd',
+      defaultDate: -1,
+    }).datepicker("setDate", yesterday);
 
-        $('#daily-report-date-submit').on('click', function (e) {
-            var $container = $('#daily-report-container');
-            var url = $container.attr('data-load-url');
+    $('#daily-report-date-submit').on('click', function (e) {
+      var $container = $('#daily-report-container');
+      var url = $container.attr('data-load-url');
 
-            var date = $input.datepicker('getDate');
+      var date = $input.datepicker('getDate');
 
 
-            data = {
-                'day': date.getDate(),
-                'month': date.getMonth() + 1,
-                'year': date.getFullYear(),
+      data = {
+        'day': date.getDate(),
+        'month': date.getMonth() + 1,
+        'year': date.getFullYear(),
+      }
+
+      $.ajax({
+        url: url,
+        type: 'POST',
+        data: data,
+        xhrFields: {
+          responseType: 'blob'
+        },
+        cache: true,
+        async: true,
+        beforeSend: function (xhr, settings) {
+          $('#daily-report-date-submit').prop('disabled', true);
+          // CSRF token
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+          }
+
+          $container.removeData().html("");
+
+          // place cog
+          $container.html('<h1 class="ajax-loading-animation"><i class="fa fa-cog fa-spin"></i> '
+            + '報表產生中，請稍後' + '...</h1>');
+        },
+        success: function (data, status, xhr) {
+          $('#daily-report-date-submit').prop('disabled', false);
+          $container.removeData().html("");
+          const blob = new Blob([data], {type: 'application/octetstream'});
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          let filename = 'data.xlsx';
+
+          const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+
+          if (contentDisposition) {
+            let filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+            if (filenameMatch && filenameMatch.length === 2) {
+              filename = decodeURIComponent(filenameMatch[1]);
             }
+          }
 
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: data,
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                cache: true,
-                beforeSend: function (xhr, settings) {
-                    // CSRF token
-                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                        xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
-                    }
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        },
+        error: function (xhr, status, error) {
+          $('#daily-report-date-submit').prop('disabled', false);
+          $container.removeData().html("");
+          if (xhr.status === 403) {
+            const res = JSON.parse(xhr.responseText);
 
-                    $container.removeData().html("");
+            if ('login_url' in res) {
+              window.location.href = res.login_url;
+            }
+          }
+          container.html(
+            `<h4 class="ajax-loading-error">
+						  <i class="fa fa-warning txt-color-orangeDark"></i>
+							${gettext('Error requesting')}
+							<span class="txt-color-red">${url}</span>: ${xhr.status}
+							<span style="text-transform: capitalize;">${error}</span>
+             </h4>`
+          );
+        }
+      });
+    })
+  }
 
-                    // place cog
-                    $container.html('<h1 class="ajax-loading-animation"><i class="fa fa-cog fa-spin"></i> '
-		                    + '報表產生中，請稍後' + '...</h1>');
-                },
-                success: function (data, status, xhr) {
-                    $container.removeData().html("");
-                    const blob = new Blob([data], {type: 'application/octetstream'});
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    let filename = 'data.xlsx';
+  // PAGE RELATED SCRIPTS
 
-                    const contentDisposition = xhr.getResponseHeader('Content-Disposition');
-
-                    if (contentDisposition) {
-                        let filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-                        if (filenameMatch && filenameMatch.length === 2) {
-                            filename = decodeURIComponent(filenameMatch[1]);
-                        }
-                    }
-
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    window.URL.revokeObjectURL(url);
-                },
-                error: function (xhr, status, error) {
-                    console.log(error);
-                }
-            });
-        })
-    }
-
-    // PAGE RELATED SCRIPTS
-
-    pagefunction();
+  pagefunction();
 
 </script>
 

@@ -75,6 +75,7 @@ services:
       --error-logfile - \
       --max-requests 1000 \
       --max-requests-jitter 100 \
+      --timeout 120 \
       dashboard.wsgi
     restart: always
     networks:
@@ -95,9 +96,10 @@ services:
     container_name: apsvp-beat
     ports: [ ]
     command:
-      - "python"
-      - "manage.py"
-      - "start_celery_beat"
+      - celery --app=dashboard.celery:app beat --loglevel=info --pidfile=/app/celeryd.pid
+      #- "python"
+      #- "manage.py"
+      #- "start_celery_beat"
 
   flower:
     container_name: apsvp-flower

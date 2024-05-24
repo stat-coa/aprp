@@ -1,50 +1,50 @@
 const taskTypes = {
   'riceBuilder': {
-    'taskName': 'MockDailyRiceBuilder',
+    'taskName': 'DailyRiceBuilder',
     'taskKey': 'daily-rice-builder-3d'
   },
   'cropBuilder': {
-    'taskName': 'MockDailyCropBuilder',
+    'taskName': 'DailyCropBuilder',
     'taskKey': 'daily-crop-builder-3d'
   },
   'fruitBuilder': {
-    'taskName': 'MockDailyFruitBuilder',
+    'taskName': 'DailyFruitBuilder',
     'taskKey': 'daily-fruit-builder-3d'
   },
   'flowerBuilder': {
-    'taskName': 'MockDailyFlowerBuilder',
+    'taskName': 'DailyFlowerBuilder',
     'taskKey': 'daily-flower-builder-3d'
   },
   'hogBuilder': {
-    'taskName': 'MockDailyHogBuilder',
+    'taskName': 'DailyHogBuilder',
     'taskKey': 'daily-hog-builder-3d'
   },
   'ramBuilder': {
-    'taskName': 'MockDailyRamBuilder',
+    'taskName': 'DailyRamBuilder',
     'taskKey': 'daily-ram-builder-3d'
   },
   'chickenBuilder': {
-    'taskName': 'MockDailyChickenBuilder',
+    'taskName': 'DailyChickenBuilder',
     'taskKey': 'daily-chicken-builder-3d'
   },
   'duckBuilder': {
-    'taskName': 'MockDailyDuckBuilder',
+    'taskName': 'DailyDuckBuilder',
     'taskKey': 'daily-duck-builder-3d'
   },
   'cattleBuilder': {
-    'taskName': 'MockDailyCattleBuilder',
+    'taskName': 'DailyCattleBuilder',
     'taskKey': 'daily-cattle-builder-3d'
   },
   'originSeafoodBuilder': {
-    'taskName': 'MockDailyOriginSeafoodBuilder',
+    'taskName': 'DailyOriginSeafoodBuilder',
     'taskKey': 'daily-seafood-origin-builder-3d'
   },
   'wholesaleSeafoodBuilder': {
-    'taskName': 'MockDailyWholesaleSeafoodBuilder',
+    'taskName': 'DailyWholesaleSeafoodBuilder',
     'taskKey': 'daily-seafood-wholesale-builder-3d'
   },
   'feedBuilder': {
-    'taskName': 'MockDailyFeedBuilder',
+    'taskName': 'DailyFeedBuilder',
     'taskKey': 'daily-feed-builder-31d'
   },
   'naifChickensBuilder': {

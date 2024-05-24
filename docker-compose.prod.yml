@@ -112,6 +112,7 @@ services:
       - worker
     environment:
       - CELERY_BROKER_URL=redis://redis:6379
+      - FLOWER_UNAUTHENTICATED_API=true
 
   notebook:
     <<: *web

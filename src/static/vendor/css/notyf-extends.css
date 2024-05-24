@@ -1,0 +1,9 @@
+.notif__message__yes, .notif__message__no {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.notif__message__yes:hover, .notif__message__no:hover {
+  color: #efeeee;
+  cursor: pointer;
+}

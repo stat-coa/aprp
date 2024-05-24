@@ -323,7 +323,7 @@ def get_celery_task_schedule(request):
     if not task_key or not task_name:
         return JsonResponse({'error': 'Invalid parameters'})
 
-    url = f'http://aprp-flower:5555/api/tasks?taskname={task_name}&limit=2'
+    url = f'http://apsvp-flower:5555/api/tasks?taskname={task_name}&limit=2'
     response = requests.get(url)
 
     try:

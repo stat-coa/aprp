@@ -1,11 +1,27 @@
-from django.views.generic.base import TemplateView
-from django.http import JsonResponse
+import itertools
+from datetime import datetime, timedelta
+from functools import wraps
+
+import requests
 from django.conf import settings
-from django.utils import translation
+from django.http import JsonResponse
 from django.shortcuts import (
     redirect,
 )
-from functools import wraps
+from django.utils import translation
+from django.views.generic.base import TemplateView
+
+from apps.configs.models import (
+    Config,
+    Chart,
+    Type,
+    Festival,
+    FestivalName,
+    AbstractProduct,
+    Last5YearsItems,
+)
+from apps.watchlists.models import Watchlist
+from dashboard.mock_celery import app
 from .utils import (
     jarvismenu_extra_context,
     product_selector_ui_extra_context,
@@ -16,23 +32,14 @@ from .utils import (
     watchlist_base_integration_extra_context,
     product_selector_base_integration_extra_context,
 )
-from apps.watchlists.models import Watchlist
-from apps.configs.models import (
-    Config,
-    Chart,
-    Type,
-    Festival,
-    FestivalName,
-    AbstractProduct,
-    Last5YearsItems,
-)
-import json
+
 
 def login_required(view):
     """
     Custom login_required to handle ajax request
     Check user is login and is_active
     """
+
     @wraps(view)
     def inner(request, *args, **kwargs):
         if not request.user.is_authenticated() or not request.user.is_active:
@@ -43,6 +50,7 @@ def login_required(view):
                 # if not ajax redirect login page
                 return redirect(settings.LOGIN_URL)
         return view(request, *args, **kwargs)
+
     return inner
 
 
@@ -117,25 +125,30 @@ class DailyReport(LoginRequiredMixin, TemplateView):
 class FestivalReport(LoginRequiredMixin, TemplateView):
     redirect_field_name = 'redirect_to'
     template_name = 'ajax/festival-report.html'
+
     # roc_year_sel='all'
 
     def post(self, request, **kwargs):
         self.kwargs['POST'] = request.POST
-        self.roc_year_sel=self.kwargs['POST']['roc_year_sel']
+        self.roc_year_sel = self.kwargs['POST']['roc_year_sel']
         return self.render_to_response(self.get_context_data())
 
     def get_context_data(self, **kwargs):
         context = super(FestivalReport, self).get_context_data(**kwargs)
-        #節日名稱       
-        festival_list = FestivalName.objects.filter(enable=True).order_by('id')        
+        # 節日名稱
+        festival_list = FestivalName.objects.filter(enable=True).order_by('id')
         context['festival_list'] = festival_list
-        #年度
+        # 年度
         roc_year_set = set()
         for y in Festival.objects.values('roc_year'):
             roc_year_set.add(y['roc_year'])
-        context['roc_year_list'] = sorted(roc_year_set,reverse=True)
-        #自選農產品清單
-        item_list = AbstractProduct.objects.filter(type=1,track_item=True) | AbstractProduct.objects.filter(id__range = [130001,130005],type=2,track_item=True) | AbstractProduct.objects.filter(id__range = [90008,90016],type=2,track_item=True) | AbstractProduct.objects.filter(id__range = [100004,100006],type=2,track_item=True) | AbstractProduct.objects.filter(id__range = [110003,110006],type=2,track_item=True) #批發品項+產地(牛5,雞8,鴨3,鵝4)
+        context['roc_year_list'] = sorted(roc_year_set, reverse=True)
+        # 自選農產品清單
+        item_list = AbstractProduct.objects.filter(type=1, track_item=True) | AbstractProduct.objects.filter(
+            id__range=[130001, 130005], type=2, track_item=True) | AbstractProduct.objects.filter(
+            id__range=[90008, 90016], type=2, track_item=True) | AbstractProduct.objects.filter(
+            id__range=[100004, 100006], type=2, track_item=True) | AbstractProduct.objects.filter(
+            id__range=[110003, 110006], type=2, track_item=True)  # 批發品項+產地(牛5,雞8,鴨3,鵝4)
 
         context['item_list'] = item_list
         return context
@@ -147,12 +160,12 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
 
     def post(self, request, **kwargs):
         self.kwargs['POST'] = request.POST
-        self.roc_year_sel=self.kwargs['POST']['item_id_list']
+        self.roc_year_sel = self.kwargs['POST']['item_id_list']
         return self.render_to_response(self.get_context_data())
 
     def get_context_data(self, **kwargs):
         context = super(Last5YearsReport, self).get_context_data(**kwargs)
-        #品項       
+        # 品項
         items_list = Last5YearsItems.objects.filter(enable=True).order_by('id')
         all_items = {}
         for i in items_list:
@@ -166,8 +179,8 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
                 source_list.append(str(s.id))
             pid = ','.join(pid_list)
             source = ','.join(source_list)
-            
-            all_items[i.name] = {'product_id':pid,'source':source}
+
+            all_items[i.name] = {'product_id': pid, 'source': source}
 
         context['items_list'] = all_items
         return context
@@ -299,3 +312,83 @@ class IntegrationTable(LoginRequiredMixin, TemplateView):
                 self.no_data = True
 
         return context
+
+
+@login_required
+def get_celery_task_schedule(request):
+    data = request.GET or request.POST
+    task_name = data.get('taskName')
+    task_key = data.get('taskKey')
+
+    if not task_key or not task_name:
+        return JsonResponse({'error': 'Invalid parameters'})
+
+    url = f'http://aprp-flower:5555/api/tasks?taskname={task_name}&limit=2'
+    response = requests.get(url)
+
+    try:
+        if response.status_code == 200 and response.json():
+            d = dict(response.json())
+            dict_prev_task = d.popitem()[1]
+            try:
+                dict_curr_task = d.popitem()[1]
+            except Exception:
+                dict_curr_task = dict_prev_task
+
+            if isinstance(dict_prev_task, dict) or isinstance(dict_curr_task, dict):
+                if dict_curr_task.get('state') == 'SUCCESS':
+                    original_datetime = datetime.fromtimestamp(dict_curr_task.get('succeeded')) + timedelta(hours=-8)
+                    succeeded = ((datetime.fromtimestamp(dict_curr_task.get('succeeded')) + timedelta(hours=-8))
+                                 .strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    original_datetime = datetime.fromtimestamp(dict_prev_task.get('succeeded')) + timedelta(hours=-8)
+                    succeeded = ((datetime.fromtimestamp(dict_prev_task.get('succeeded')) + timedelta(hours=-8))
+                                 .strftime('%Y-%m-%d %H:%M:%S'))
+
+                if dict_curr_task.get('state') == 'SUCCESS':
+                    return JsonResponse({
+                        'succeeded': succeeded,
+                        'state': dict_curr_task.get('state'),
+                        'nextTime': get_task_next_time(task_key, original_datetime),
+                    })
+                elif dict_curr_task.get('state') == 'STARTED':
+                    return JsonResponse({
+                        'state': dict_curr_task.get('state'),
+                        'succeeded': succeeded,
+                    })
+
+        return JsonResponse({'error': 'No data found'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+
+
+def get_task_next_time(task_key: str, original_datetime: datetime):
+    schedule = app.conf.beat_schedule[task_key]['schedule']
+    hours = list(schedule.hour)
+    minutes = list(schedule.minute)
+
+    for hour, minute in itertools.product(hours, minutes):
+        dt = datetime(
+            year=original_datetime.year,
+            month=original_datetime.month,
+            day=original_datetime.day,
+            hour=hour,
+            minute=minute,
+            second=0,
+            microsecond=0
+        )
+
+        if dt > original_datetime:
+            return dt.strftime('%Y-%m-%d %H:%M:%S')
+
+    # friday
+    if original_datetime.weekday() == 4:
+        next_time = original_datetime + timedelta(days=3)
+    # saturday
+    elif original_datetime.weekday() == 5:
+        next_time = original_datetime + timedelta(days=2)
+    # sunday to thursday
+    else:
+        next_time = original_datetime + timedelta(days=1)
+
+    return next_time.replace(hour=hours[0], minute=minutes[0], second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')

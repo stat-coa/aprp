@@ -33,6 +33,7 @@ from .views import (
     BrowserNotSupport,
     FestivalReport,
     Last5YearsReport,
+    get_celery_task_schedule,
 )
 
 urlpatterns = [
@@ -49,6 +50,7 @@ urlpatterns = [
     url(r'^tracking/', include('tracking.urls')),
     # watchlist
     url(r'^set-user-watchlist/(?P<wi>\d+)/$', Index.as_view(), name='set_user_watchlist'),
+    url(r'^get-celery-task-schedule/$', get_celery_task_schedule),
 ]
 
 urlpatterns += i18n_patterns(

@@ -46,6 +46,11 @@
 
 		<!-- Bootstrap Multiselect Styles -->
 		{% comment %} <link rel="stylesheet" href="{% static 'vendor/css/bootstrap-multiselect.min.css' %}"> {% endcomment %}
+
+		<!-- Notyf Style -->
+		<link rel="stylesheet" href="{% static 'vendor/css/notyf.min.css' %}">
+		<link rel="stylesheet" href="{% static 'vendor/css/notyf-extends.css' %}">
+
 		<style>
 			.multiselect-container {
 				height: 200px;
@@ -170,8 +175,12 @@
 		<script src="{% static 'ckeditor/ckeditor-init.js' %}" data-ckeditor-basepath="/static/ckeditor/ckeditor/" id="ckeditor-init-script"></script>
 		<script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
 
+		<!-- Notyf js -->
+		<script type="text/javascript" src='{% static "vendor/js/notyf.min.js" %}'></script>
+
 		<!-- Custom Plugin -->
 		<script src="{% static 'js/basefunction.js' %}"></script>
+		<script src="{% static 'js/showTaskTime.js' %}"></script>
 
 		{% if use_ga %}
 			{% include "snippets/ga.html" with ga_tracking_id=ga_tracking_id %}
@@ -182,5 +191,14 @@
 
 		<!-- Bootstrap select -->
 		<script type="text/javascript" src='{% static "vendor/js/bootstrap/bootstrap-select.min.js" %}'></script>
+
+		<script>
+      for (const el of [...document.querySelectorAll('em.fa.fa-minus-square-o')]) {
+        el.addEventListener('click', function (e) {
+					e.stopPropagation()
+
+				});
+			}
+		</script>
 	</body>
 </html>

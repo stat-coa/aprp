@@ -14,7 +14,8 @@ DEBUG_TOOLBAR_CONFIG = {
 
 MIDDLEWARE_CLASSES.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
-INTERNAL_IPS = ['172.21.0.1', '127.0.0.1', '172.21.0.5', '0.0.0.0']
+# INTERNAL_IPS = ['172.21.0.1', '127.0.0.1', '172.21.0.5', '0.0.0.0']
+INTERNAL_IPS = ['0.0.0.0']
 
 DEBUG_TOOLBAR_PANELS = [
     "debug_toolbar.panels.versions.VersionsPanel",
@@ -42,13 +43,13 @@ NOTEBOOK_ARGUMENTS = [
     '--no-browser',
 ]
 
-LOGGING['handlers']['console'] = {
-    'level': 'DEBUG',
-    'class': 'logging.StreamHandler',
-}
-
-LOGGING['loggers']['django.db.backends'] = {
-    'handlers': ['console'],
-    'level': 'DEBUG',
-    'propagate': False,
-}
+# LOGGING['handlers']['console'] = {
+#     'level': 'DEBUG',
+#     'class': 'logging.StreamHandler',
+# }
+#
+# LOGGING['loggers']['django.db.backends'] = {
+#     'handlers': ['console'],
+#     'level': 'DEBUG',
+#     'propagate': False,
+# }

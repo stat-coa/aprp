@@ -472,6 +472,12 @@ function loadURL(url, container, data, type) {
             if(window.ga){
                 ga('send', 'event', 'ajax', 'success', url);
             }
+
+            try {
+                updateCeleryScheduleUi();
+            } catch (e) {
+                console.log(e)
+            }
         },
         error : function(xhr, status, thrownError, error) {
             if(xhr.status == 403){

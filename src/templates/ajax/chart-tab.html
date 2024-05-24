@@ -4,79 +4,113 @@
 {% load watchlist_filter %}
 
 {% if view.watchlist_base %}
-    {% with monitor_profile_filtered_by_watchlist=monitor_profiles|monitor_profile_filter:watchlist %}
-    <!-- row -->
-    <div class="row">
+	{% with monitor_profile_filtered_by_watchlist=monitor_profiles|monitor_profile_filter:watchlist %}
+		<!-- row -->
+		<div class="row">
 
-        <!-- specify layer attribute for style setting -->
-        <ul id="chart-functions-tab" class="nav nav-pills nav-justified" data-layer="1">
-            {% for chart in charts %}
-            <li>
-                <a data-load-url="{% if lct and loi %}{% url 'chart_content' ci=chart.id wi=wi ct=ct oi=oi lct=lct loi=loi %}{% else %}{% url 'chart_content' ci=chart.id wi=wi ct=ct oi=oi %}{% endif %}"
-                   data-load
-                   href="#chart-{{ chart.id }}" class="font-md"
-                   data-toggle="tab">
-                    <span>{{ chart.name }}</span>
-                </a>
-            </li>
-            {% endfor %}
+			<!-- specify layer attribute for style setting -->
+			<ul id="chart-functions-tab" class="nav nav-pills nav-justified" data-layer="1">
+				{% for chart in charts %}
+					<li>
+						<a data-load-url="
 
-            {% if user.info.monitor_info_viewer and monitor_profile_filtered_by_watchlist %}
-            <li>
-                <a href="#product-profile" class="font-md"
-                   data-toggle="tab">{% trans 'Product Profile' %}</a>
-            </li>
-            {% endif %}
-        </ul>
 
-        <div id="chart-functions-content" class="tab-content" style="opacity: 1;">
-            {% for chart in charts %}
-            <div class="tab-pane fade" id="chart-{{ chart.id }}">
-                <!-- dynamically load content here -->
-            </div>
-            {% endfor %}
 
-            {% if monitor_profile_filtered_by_watchlist %}
-            <div class="tab-pane fade" id="product-profile">
-                {% include 'contents/product-profile.html' with monitor_profiles=monitor_profile_filtered_by_watchlist %}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endwith %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+							{% if lct and loi %}{% url 'chart_content' ci=chart.id wi=wi ct=ct oi=oi lct=lct loi=loi %}{% else %}{% url 'chart_content' ci=chart.id wi=wi ct=ct oi=oi %}{% endif %}"
+						   data-load
+						   href="#chart-{{ chart.id }}" class="font-md"
+						   data-toggle="tab">
+							<span>{{ chart.name }}</span>
+						</a>
+					</li>
+				{% endfor %}
+
+				{% if user.info.monitor_info_viewer and monitor_profile_filtered_by_watchlist %}
+					<li>
+						<a href="#product-profile" class="font-md"
+						   data-toggle="tab">{% trans 'Product Profile' %}</a>
+					</li>
+				{% endif %}
+			</ul>
+
+			<div id="chart-functions-content" class="tab-content" style="opacity: 1;">
+				{% for chart in charts %}
+					<div class="tab-pane fade" id="chart-{{ chart.id }}">
+						<!-- dynamically load content here -->
+					</div>
+				{% endfor %}
+
+				{% if monitor_profile_filtered_by_watchlist %}
+					<div class="tab-pane fade" id="product-profile">
+						{% include 'contents/product-profile.html' with monitor_profiles=monitor_profile_filtered_by_watchlist %}
+					</div>
+				{% endif %}
+			</div>
+		</div>
+	{% endwith %}
 
 {% else %}
 
-    <div class="row">
+	<div class="row">
 
-        <!-- specify layer attribute for style setting -->
-        <ul id="chart-functions-tab" class="nav nav-pills nav-justified" data-layer="1">
-            {% for chart in charts %}
-            <li>
-                <a data-load-url="{% url 'chart_content' ci=chart.id type=type products=products %}?sources={{ sources }}"
-                   data-load
-                   href="#chart-{{ chart.id }}" class="font-md"
-                   data-toggle="tab">
-                    <span>{{ chart.name }}</span>
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+		<!-- specify layer attribute for style setting -->
+		<ul id="chart-functions-tab" class="nav nav-pills nav-justified" data-layer="1">
+			{% for chart in charts %}
+				<li>
+					<a data-load-url="{% url 'chart_content' ci=chart.id type=type products=products %}?sources={{ sources }}"
+					   data-load
+					   href="#chart-{{ chart.id }}" class="font-md"
+					   data-toggle="tab">
+						<span>{{ chart.name }}</span>
+					</a>
+				</li>
+			{% endfor %}
+		</ul>
 
-        <div id="chart-functions-content" class="tab-content" style="opacity: 1;">
-            {% for chart in charts %}
-            <div class="tab-pane fade" id="chart-{{ chart.id }}">
-                <!-- dynamically load content here -->
-            </div>
-            {% endfor %}
-        </div>
-    </div>
+		<div id="chart-functions-content" class="tab-content" style="opacity: 1;">
+			{% for chart in charts %}
+				<div class="tab-pane fade" id="chart-{{ chart.id }}">
+					<!-- dynamically load content here -->
+				</div>
+			{% endfor %}
+		</div>
+	</div>
 
 {% endif %}
 
 <script>
 
-	/* DO NOT REMOVE : GLOBAL FUNCTIONS!
+  /* DO NOT REMOVE : GLOBAL FUNCTIONS!
 	 *
 	 * pageSetUp(); WILL CALL THE FOLLOWING FUNCTIONS
 	 *
@@ -106,83 +140,91 @@
 	 *
 	 */
 
-	pageSetUp();
+  pageSetUp();
 
-	// pagefunction
 
-	var pagefunction = function() {
 
-	    dynamic_setup_widgets('product-profile-widget-grid');
+  // pagefunction
 
-        // TAB CLICK
-        $('#chart-functions-tab').on('shown.bs.tab','a[data-toggle="tab"][data-load]', function(){
-            $this = $(this);
-            var url = $this.attr('data-load-url');
-            var $container = $($this.attr('href'));
+  var pagefunction = function () {
+    dynamic_setup_widgets('product-profile-widget-grid');
 
-            // REFLOW CONTAINER CHARTS
-            if($this.attr('data-load')){
-                $container.find('[data-highcharts-chart]').each(function(){
-                    $(this).highcharts().reflow();
-                    root.console.log('reflow highchart ' + $(this).data('highcharts-chart'));
-                })
-                return;
-            }
+    // TAB CLICK
+    $('#chart-functions-tab').on('shown.bs.tab', 'a[data-toggle="tab"][data-load]', function () {
+      updateCeleryScheduleUi();
 
-            loadURL(url, $container);
-            $this.attr('data-load', true);
-        });
+      $this = $(this);
+      var url = $this.attr('data-load-url');
+      var $container = $($this.attr('href'));
 
-        // STORE WATCHLIST AND MONITOR PROFILES TO EACH CHART CONTAINER
-        $('#chart-functions-content .tab-pane').each(function(){
-            this.monitorProfiles = {{ monitor_profiles_json|stringify|safe }};
-            this.watchlistProfiles = {{ watchlists_json|stringify|safe }};
+      // REFLOW CONTAINER CHARTS
+      if ($this.attr('data-load')) {
+        $container.find('[data-highcharts-chart]').each(function () {
+          $(this).highcharts().reflow();
+          root.console.log('reflow highchart ' + $(this).data('highcharts-chart'));
         })
+        return;
+      }
 
-        // INITIAL FIRST CHART
-        $('#chart-functions-tab a[data-toggle="tab"][data-load]:eq(0)').trigger('click');
+      loadURL(url, $container);
+      $this.attr('data-load', true);
 
-        // REFLOW CHARTS ON FULLSCREEN
-        $('#chart-functions-content').on('click', '.jarviswidget-fullscreen-btn', function(){
-            $(this).parents('.jarviswidget').find('[data-highcharts-chart]').each(function(){
-                $(this).highcharts().reflow();
-                root.console.log('reflow highchart ' + $(this).data('highcharts-chart'));
-            })
-        })
-	};
+      if (document.querySelector('h1.ajax-loading-animation')) {
+        clearCelerySchedule();
+        getCelerySchedule();
+      }
+    });
 
-	// end pagefunction
+    // STORE WATCHLIST AND MONITOR PROFILES TO EACH CHART CONTAINER
+    $('#chart-functions-content .tab-pane').each(function () {
+      this.monitorProfiles = {{ monitor_profiles_json|stringify|safe }};
+      this.watchlistProfiles = {{ watchlists_json|stringify|safe }};
+    })
 
-	// run pagefunction on load
+    // INITIAL FIRST CHART
+    $('#chart-functions-tab a[data-toggle="tab"][data-load]:eq(0)').trigger('click');
 
-	// PAGE RELATED SCRIPTS
+    // REFLOW CHARTS ON FULLSCREEN
+    $('#chart-functions-content').on('click', '.jarviswidget-fullscreen-btn', function () {
+      $(this).parents('.jarviswidget').find('[data-highcharts-chart]').each(function () {
+        $(this).highcharts().reflow();
+        root.console.log('reflow highchart ' + $(this).data('highcharts-chart'));
+      })
+    })
+  };
 
-	var scripts = [
-	    // Bootstrap plugins
-	    "{% static 'vendor/js/plugin/multiselect/bootstrap-multiselect.min.js' %}",
+  // end pagefunction
 
-	    // Highcharts plugins
-	    "{% static 'vendor/js/plugin/highcharts/highstock.js' %}",
-	    "{% static 'vendor/js/plugin/highcharts/no-data-to-display.js' %}",
-	    "{% static 'vendor/js/plugin/highcharts/exporting.js' %}",
-	    "{% static 'vendor/js/plugin/highcharts/highcharts-more.js' %}",
-	    "{% static 'js/highcharts/highcharts-settings.js' %}",
-	    "{% static 'js/highcharts/sparkline.js' %}",
+  // run pagefunction on load
 
-	    // DataTable plugins
-	    "{% static 'vendor/js/plugin/datatables/jquery.dataTables.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/dataTables.colVis.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/dataTables.buttons.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/buttons.bootstrap.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/jszip.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/pdfmake.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/vfs_fonts.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/buttons.html5.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/buttons.print.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatables/dataTables.bootstrap.min.js' %}",
-	    "{% static 'vendor/js/plugin/datatable-responsive/datatables.responsive.min.js' %}",
-	    "{% static 'js/datatables/dataTableHelper.js' %}",
-	]
-    scriptLoader(scripts, pagefunction);
+  // PAGE RELATED SCRIPTS
+
+  var scripts = [
+    // Bootstrap plugins
+    "{% static 'vendor/js/plugin/multiselect/bootstrap-multiselect.min.js' %}",
+
+    // Highcharts plugins
+    "{% static 'vendor/js/plugin/highcharts/highstock.js' %}",
+    "{% static 'vendor/js/plugin/highcharts/no-data-to-display.js' %}",
+    "{% static 'vendor/js/plugin/highcharts/exporting.js' %}",
+    "{% static 'vendor/js/plugin/highcharts/highcharts-more.js' %}",
+    "{% static 'js/highcharts/highcharts-settings.js' %}",
+    "{% static 'js/highcharts/sparkline.js' %}",
+
+    // DataTable plugins
+    "{% static 'vendor/js/plugin/datatables/jquery.dataTables.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/dataTables.colVis.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/dataTables.buttons.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/buttons.bootstrap.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/jszip.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/pdfmake.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/vfs_fonts.js' %}",
+    "{% static 'vendor/js/plugin/datatables/buttons.html5.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/buttons.print.min.js' %}",
+    "{% static 'vendor/js/plugin/datatables/dataTables.bootstrap.min.js' %}",
+    "{% static 'vendor/js/plugin/datatable-responsive/datatables.responsive.min.js' %}",
+    "{% static 'js/datatables/dataTableHelper.js' %}",
+  ]
+  scriptLoader(scripts, pagefunction);
 
 </script>

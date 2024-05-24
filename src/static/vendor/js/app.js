@@ -652,8 +652,6 @@ var calc_navbar_height = function() {
 			});
 
 			$this.find("li a").click(function(e) {
-        console.log(e)
-
 				if ($(this).parent().find("ul").length !== 0) {
 
 					if (opts.accordion) {

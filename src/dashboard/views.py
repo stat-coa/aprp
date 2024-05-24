@@ -21,7 +21,7 @@ from apps.configs.models import (
     Last5YearsItems,
 )
 from apps.watchlists.models import Watchlist
-from dashboard.mock_celery import app
+from dashboard.celery import app
 from .utils import (
     jarvismenu_extra_context,
     product_selector_ui_extra_context,

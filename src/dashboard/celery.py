@@ -163,11 +163,6 @@ app.conf.beat_schedule = {
         'schedule': crontab(minute=0, hour='6', day_of_week='sunday'),
         'args': (-30,)  # direct 31 days range
     },
-    'beat-per-minute': {
-        'task': 'Beat',
-        'schedule': 60.0,
-        'args': (datetime.datetime.now(),),
-    },
 }
 
 

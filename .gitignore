@@ -114,3 +114,6 @@ ENV/
 # pycharm
 .idea
 *.pyc
+*.xlsx
+*.ipynb
+src/.Trash-*/

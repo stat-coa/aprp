@@ -87,9 +87,7 @@ services:
     container_name: apsvp-worker
     ports: [ ]
     command:
-      - "python"
-      - "manage.py"
-      - "start_celery_worker"
+      - celery --app=dashboard.celery:app worker --pool=eventlet --concurrency=4  --loglevel=info
 
   beat:
     <<: *web

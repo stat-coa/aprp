@@ -323,8 +323,11 @@ def get_celery_task_schedule(request):
     if not task_key or not task_name:
         return JsonResponse({'error': 'Invalid parameters'})
 
-    url = f'http://apsvp-flower:5555/api/tasks?taskname={task_name}&limit=2'
-    response = requests.get(url)
+    try:
+        url = f'http://apsvp-flower:5555/api/tasks?taskname={task_name}&limit=2'
+        response = requests.get(url)
+    except Exception:
+        return JsonResponse({'error': 'Failed to get data from flower server'})
 
     try:
         if response.status_code == 200 and response.json():
@@ -379,6 +382,14 @@ def get_task_next_time(task_key: str, original_datetime: datetime):
         )
 
         if dt > original_datetime:
+            if 'feed' not in task_key:
+                if original_datetime.weekday() == 5:
+                    dt = dt + timedelta(days=2)
+                elif original_datetime.weekday() == 6:
+                    dt = dt + timedelta(days=1)
+
+                return dt.strftime('%Y-%m-%d %H:%M:%S')
+
             return dt.strftime('%Y-%m-%d %H:%M:%S')
 
     # friday

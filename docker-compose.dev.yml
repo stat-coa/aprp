@@ -58,17 +58,19 @@ services:
     build:
       context: .
       target: dev
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_HOST=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - SECRET_KEY=qd!xxe%zu_this_%8j$is_@#)$_dev_@#%%%_secret_key%)^
-      - DEBUG=True
-      - DJANGO_SETTINGS_MODULE=dashboard.configs.development
-      - JUPYTER_ALLOW_INSECURE_WRITES=1
-      - REDIS_HOST=redis
-      - PID_FILE=/app/celeryd.pid
+    env_file:
+      - .env
+#    environment:
+#      - POSTGRES_DB=postgres
+#      - POSTGRES_HOST=postgres
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=postgres
+#      - SECRET_KEY=qd!xxe%zu_this_%8j$is_@#)$_dev_@#%%%_secret_key%)^
+#      - DEBUG=True
+#      - DJANGO_SETTINGS_MODULE=dashboard.configs.development
+#      - JUPYTER_ALLOW_INSECURE_WRITES=1
+#      - REDIS_HOST=redis
+#      - PID_FILE=/app/celeryd.pid
     ports:
       - "8000:8000"
     depends_on:
@@ -87,24 +89,23 @@ services:
 
   worker:
     <<: *web
-    container_name: worker
+    container_name: aprp-worker
     ports: [ ]
     command:
-      - "python"
-      - "manage.py"
-      - "start_celery_worker"
+      - 'celery --app=dashboard.mock_celery:app worker --pool=eventlet --concurrency=4  --loglevel=info'
 
   beat:
     <<: *web
-    container_name: beat
+    container_name: aprp-beat
     ports: [ ]
     command:
-      - "python"
-      - "manage.py"
-      - "start_celery_beat"
+      - celery --app=dashboard.mock_celery:app beat --loglevel=info --pidfile=/app/celeryd.pid
+#      - "python"
+#      - "manage.py"
+#      - "start_celery_beat"
 
   flower:
-    container_name: flower
+    container_name: aprp-flower
     image: mher/flower
     ports:
       - "49555:5555"
@@ -113,11 +114,12 @@ services:
     depends_on:
       - worker
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379
+      - FLOWER_UNAUTHENTICATED_API=true
 
   notebook:
     <<: *web
-    container_name: notebook
+    container_name: aprp-notebook
     command:
       - python
       - manage.py

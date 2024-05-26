@@ -31,6 +31,10 @@ const taskTypes = {
     'taskName': 'DailyDuckBuilder',
     'taskKey': 'daily-duck-builder-3d'
   },
+  'gooseBuilder': {
+    'taskName': 'DailyGooseBuilder',
+    'taskKey': 'daily-goose-builder-3d'
+  },
   'cattleBuilder': {
     'taskName': 'DailyCattleBuilder',
     'taskKey': 'daily-cattle-builder-3d'
@@ -167,6 +171,10 @@ function getTaskObj() {
 
     if (breadcrumb[2] && breadcrumb[2].textContent.includes('鴨')) {
       return taskTypes.duckBuilder
+    }
+
+    if (breadcrumb[2] && breadcrumb[2].textContent.includes('鵝')) {
+      return taskTypes.gooseBuilder
     }
 
     if (breadcrumb[2] && breadcrumb[2].textContent.includes('牛')) {

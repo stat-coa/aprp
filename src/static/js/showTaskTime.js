@@ -351,7 +351,7 @@ function getCelerySchedule() {
     error(xhr, status, error) {
       console.log(`error: ${error}`)
 
-      if (error.includes('No data')) {
+      if (error.error.includes('No data')) {
         window.celeryTask = undefined
       }
     }

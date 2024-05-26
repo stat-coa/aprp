@@ -345,6 +345,10 @@ function getCelerySchedule() {
         updateCeleryScheduleUi()
       } else {
         console.log(`response: ${data.error}`)
+
+        if (data.error.includes('No data')) {
+          window.celeryTask = undefined
+        }
       }
 
     },

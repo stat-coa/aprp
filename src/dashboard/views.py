@@ -342,11 +342,11 @@ def get_celery_task_schedule(request):
                 if dict_curr_task.get('state') == 'SUCCESS':
                     original_datetime = datetime.fromtimestamp(dict_curr_task.get('succeeded')) + timedelta(hours=-8)
                     succeeded = ((datetime.fromtimestamp(dict_curr_task.get('succeeded')) + timedelta(hours=-8))
-                                 .strftime('%Y-%m-%d %H:%M:%S'))
+                                 .strftime('%Y/%m/%d %H:%M:%S'))
                 else:
                     original_datetime = datetime.fromtimestamp(dict_prev_task.get('succeeded')) + timedelta(hours=-8)
                     succeeded = ((datetime.fromtimestamp(dict_prev_task.get('succeeded')) + timedelta(hours=-8))
-                                 .strftime('%Y-%m-%d %H:%M:%S'))
+                                 .strftime('%Y/%m/%d %H:%M:%S'))
 
                 if dict_curr_task.get('state') == 'SUCCESS':
                     return JsonResponse({

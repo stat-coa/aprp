@@ -261,7 +261,7 @@ function updateCeleryScheduleUi() {
 
 function showNotification() {
   const notyf = new Notyf({
-    duration: 10000,
+    duration: 1000 * 60 * 60,
     position: {
       x: 'center',
       y: 'bottom',
@@ -337,7 +337,6 @@ function getCelerySchedule() {
           window.currState = data.state
 
           if (window?.prevState === 'STARTED' && window?.currState === 'SUCCESS') {
-            // TODO: refresh chart
             showNotification()
           }
         }
@@ -345,19 +344,13 @@ function getCelerySchedule() {
         updateCeleryScheduleUi()
       } else {
         console.log(`response: ${data.error}`)
-
-        if (data.error.includes('No data')) {
-          window.celeryTask = undefined
-        }
+        window.celeryTask = undefined
       }
 
     },
     error(xhr, status, error) {
       console.log(`error: ${error}`)
-
-      if (error.error.includes('No data')) {
-        window.celeryTask = undefined
-      }
+      window.celeryTask = undefined
     }
   })
 }

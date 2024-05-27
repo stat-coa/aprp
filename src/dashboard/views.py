@@ -388,9 +388,9 @@ def get_task_next_time(task_key: str, original_datetime: datetime):
                 elif original_datetime.weekday() == 6:
                     dt = dt + timedelta(days=1)
 
-                return dt.strftime('%Y-%m-%d %H:%M:%S')
+                return dt.strftime('%Y/%m/%d %H:%M:%S')
 
-            return dt.strftime('%Y-%m-%d %H:%M:%S')
+            return dt.strftime('%Y/%m/%d %H:%M:%S')
 
     # friday
     if original_datetime.weekday() == 4:
@@ -402,4 +402,4 @@ def get_task_next_time(task_key: str, original_datetime: datetime):
     else:
         next_time = original_datetime + timedelta(days=1)
 
-    return next_time.replace(hour=hours[0], minute=minutes[0], second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+    return next_time.replace(hour=hours[0], minute=minutes[0], second=0, microsecond=0).strftime('%Y/%m/%d %H:%M:%S')

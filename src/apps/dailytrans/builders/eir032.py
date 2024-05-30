@@ -106,7 +106,6 @@ class Api(AbstractApi):
                             columns=['上價', '中價', '下價', '平均價', '交易量', '交易日期', '品種代碼', '市場名稱',
                                      '魚貨名稱'])
         data = data[data['品種代碼'].isin(self.target_items)]
-
         try:
             if not data.empty:
                 self._access_data_from_api(data)
@@ -155,6 +154,7 @@ class Api(AbstractApi):
         data['date'] = data['date'].apply(lambda x: datetime.datetime.strptime(
             f'{int(x) // 10000 + 1911}-{(int(x) // 100) % 100:02d}-{int(x) % 100:02d}', '%Y-%m-%d').date())
         data['source__name'] = data['source__name'].str.replace('台', '臺')
+        data['product__code'] = data['product__code'].astype(str)
 
         data_db = DailyTran.objects.filter(date=data['date'].iloc[0], product__type=1, product__config=self.CONFIG)
         data_db = pd.DataFrame(list(data_db.values('id', 'product__id', 'product__code', 'up_price', 'mid_price',

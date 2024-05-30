@@ -40,7 +40,7 @@ services:
       - main
 
   redis-commander:
-    container_name: redis-commander
+    container_name: aprp-redis-commander
     hostname: redis-commander
     image: ghcr.io/joeferner/redis-commander:latest
     environment:

@@ -1,3 +1,5 @@
+import datetime
+
 from apps.dailytrans.builders.eir030 import Api as WholeSaleApi06
 from apps.dailytrans.builders.apis import Api as OriginApi
 from apps.dailytrans.builders.amis import Api as WholeSaleApi03
@@ -31,11 +33,14 @@ def direct_wholesale_06(start_date=None, end_date=None, *args, **kwargs):
 
     for model in MODELS:
         wholesale_api = WholeSaleApi06(model=model, **data._asdict())
+        date_diff = end_date - start_date
 
-        for obj in product_generator(model, type=1, **kwargs):
-            for delta_start_date, delta_end_date in date_generator(start_date, end_date, WHOLESALE_DELTA_DAYS):
-                response = wholesale_api.request(start_date=delta_start_date, end_date=delta_end_date, code=obj.code)
-                wholesale_api.load(response)
+        for delta in range(date_diff.days + 1):
+            response = wholesale_api.request(
+                start_date=start_date + datetime.timedelta(days=delta),
+                end_date=start_date + datetime.timedelta(days=delta), tc_type='N05'
+            )
+            wholesale_api.load(response)
 
     return data
 

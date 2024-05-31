@@ -449,18 +449,18 @@ class DailyReportFactory(object):
             # )
 
         # 第二階段隱藏品項欄位後日報下方說明欄,依品項顯示月份對應調整資料來源文字說明處理
-        for rows in sheet['A133:U148']:
+        for rows in sheet['A133:U149']:
             for cell in rows:
                 # 資料來源字型統一為標楷體
                 cell.font = Font(name='標楷體', size=13)
                 row_no = cell.row
-                if row_no > 134:
+                if row_no > 135:
                     cell.value = None
         
-        sheet.cell(row=133, column=1).value = sheet.cell(row=133, column=1).value.replace('本會', '本部')
         sheet.cell(row=134, column=1).value = sheet.cell(row=134, column=1).value.replace('本會', '本部')
+        sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
 
-        now_row = 135
+        now_row = 136
         # 一般農產品的資料來源說明欄位處理
         for i in desc_1:
             item_name = i[0]
@@ -469,7 +469,7 @@ class DailyReportFactory(object):
             # append_desc
             if item_name in self.item_desc:
                 td = sheet.cell(row=now_row, column=1)
-                tmp = (now_row == 135 and '3.') or '   '
+                tmp = (now_row == 136 and '3.') or '   '
                 td.value = f"{tmp}{desc_1_text}；"
                 now_row += 1
         td = sheet.cell(row=now_row-1, column=1)

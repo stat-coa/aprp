@@ -1,4 +1,6 @@
-import pandas as pd 
+import itertools
+
+import pandas as pd
 import numpy as np
 import psycopg2
 from datetime import date
@@ -58,7 +60,7 @@ class Last5YearsReportFactory(object):
         table['date'] = pd.to_datetime(table['date'], format='%Y-%m-%d')
         return table
 
-    def result(self,table):
+    def result(self, table: pd.DataFrame):
         source_list = self.source
         product_data_dict = {}
         avgprice_dict = {}
@@ -67,6 +69,7 @@ class Last5YearsReportFactory(object):
         avgvolumeweight_dict = {}
         has_volume = False
         has_weight = False
+        last_5_years_onemonth_table = pd.DataFrame()
 
         # 近五年各月數據
         for y in range(self.last_5_years_ago,self.today_year+1):
@@ -277,9 +280,13 @@ class Last5YearsReportFactory(object):
         avgprice_data.loc['近五年平均'] = last_5_years_avgprice_list
         avgprice_data = avgprice_data.round(2)
 
-        # TODO: To fix ValueError: Length mismatch: Expected axis has 12 elements, new values have 13 elements bug
-        if has_volume:
-        # if product_data_dict[self.all_product_id_list[0]]['avgvolume']:
+        # define a variable for avg volume dict
+        temp_avg_volume = product_data_dict[self.all_product_id_list[0]]['avgvolume']
+
+        # merge all avg volume data into one list and remove nan value
+        avg_volumes = [i for i in list(itertools.chain(*list(temp_avg_volume.values()))) if str(i) != 'nan']
+
+        if temp_avg_volume and sum(avg_volumes) > 0:
             avgvolume_data = pd.DataFrame.from_dict(product_data_dict[self.all_product_id_list[0]]['avgvolume'], orient='index')
             avgvolume_data.columns = columns_name
             avgvolume_data.loc['近五年平均'] = last_5_years_avgvolume_list
@@ -304,7 +311,6 @@ class Last5YearsReportFactory(object):
 
         return avgprice_data, avgvolume_data, avgweight_data, avgvolumeweight_data
 
-
     def __call__(self):
         #獲取完整交易表
         table = self.get_table()
@@ -313,6 +319,3 @@ class Last5YearsReportFactory(object):
             return self.result(table)
         else:
             db_logger.error(f'DB query error : product_id_list = {self.all_product_id_list}; source_list = {self.source}', extra={'type_code': 'LOT-last5yearsreport'})
-
-
-

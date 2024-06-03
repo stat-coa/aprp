@@ -154,6 +154,34 @@ class FestivalReport(LoginRequiredMixin, TemplateView):
         return context
 
 
+def sort_items(items_list: list):
+    # manually sort items
+    # 龍虎斑(1174)(批發)
+    i = items_list.pop(90)
+    items_list.insert(84, i)
+
+    i = items_list.pop(92)
+    items_list.insert(74, i)
+
+    i = items_list.pop(7)
+    items_list.insert(66, i)
+
+    i = items_list.pop(15)
+    items_list.insert(65, i)
+
+    i = items_list.pop(13)
+    items_list.insert(65, i)
+
+    i = items_list.pop(0)
+    items_list.insert(71, i)
+
+    i = items_list.pop(0)
+    items_list.insert(71, i)
+
+    i = items_list.pop(1)
+    items_list.insert(0, i)
+
+
 class Last5YearsReport(LoginRequiredMixin, TemplateView):
     redirect_field_name = 'redirect_to'
     template_name = 'ajax/last5years-report.html'
@@ -166,17 +194,23 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(Last5YearsReport, self).get_context_data(**kwargs)
         # 品項
-        items_list = Last5YearsItems.objects.filter(enable=True).order_by('id')
+        qs = Last5YearsItems.objects.filter(enable=True).order_by('product_id')
+
+        # because qs has duplicate items, so we need to remove duplicate items
+        items_list = []
+
+        for i in qs:
+            if i not in items_list:
+                items_list.append(i)
+
+        sort_items(items_list)
+
         all_items = {}
         for i in items_list:
-            pid_list = []
-            source_list = []
             pids = i.product_id.all()
             sources = i.source.all()
-            for p in pids:
-                pid_list.append(str(p.id))
-            for s in sources:
-                source_list.append(str(s.id))
+            pid_list = [str(p.id) for p in pids]
+            source_list = [str(s.id) for s in sources]
             pid = ','.join(pid_list)
             source = ','.join(source_list)
 

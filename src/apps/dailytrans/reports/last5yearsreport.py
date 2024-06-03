@@ -277,7 +277,9 @@ class Last5YearsReportFactory(object):
         avgprice_data.loc['近五年平均'] = last_5_years_avgprice_list
         avgprice_data = avgprice_data.round(2)
 
-        if product_data_dict[self.all_product_id_list[0]]['avgvolume']:
+        # TODO: To fix ValueError: Length mismatch: Expected axis has 12 elements, new values have 13 elements bug
+        if has_volume:
+        # if product_data_dict[self.all_product_id_list[0]]['avgvolume']:
             avgvolume_data = pd.DataFrame.from_dict(product_data_dict[self.all_product_id_list[0]]['avgvolume'], orient='index')
             avgvolume_data.columns = columns_name
             avgvolume_data.loc['近五年平均'] = last_5_years_avgvolume_list
@@ -293,6 +295,7 @@ class Last5YearsReportFactory(object):
             avgvolumeweight_data.columns = columns_name
             avgvolumeweight_data.loc['近五年平均'] = last_5_years_avgvolumeweight_list
             avgvolumeweight_data = avgvolumeweight_data.round(3)
+
         elif product_data_dict[self.all_product_id_list[0]]['avgweight']:
             avgweight_data = pd.DataFrame.from_dict(product_data_dict[self.all_product_id_list[0]]['avgweight'], orient='index')
             avgweight_data.columns = columns_name

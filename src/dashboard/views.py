@@ -181,6 +181,22 @@ def sort_items(items_list: list):
     i = items_list.pop(1)
     items_list.insert(0, i)
 
+    # 花椰菜, 胡瓜, 花胡瓜, 絲瓜, 茄子
+    i = items_list.pop(5)
+    items_list.insert(23, i)
+
+    i = items_list.pop(5)
+    items_list.insert(23, i)
+
+    i = items_list.pop(5)
+    items_list.insert(23, i)
+
+    i = items_list.pop(5)
+    items_list.insert(23, i)
+
+    i = items_list.pop(5)
+    items_list.insert(23, i)
+
 
 class Last5YearsReport(LoginRequiredMixin, TemplateView):
     redirect_field_name = 'redirect_to'

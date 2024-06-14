@@ -156,6 +156,8 @@ class FestivalReport(LoginRequiredMixin, TemplateView):
 
 def sort_items(items_list: list):
     # manually sort items
+    new_fish = items_list.pop(84)
+
     # 龍虎斑(1174)(批發)
     i = items_list.pop(90)
     items_list.insert(84, i)
@@ -196,6 +198,12 @@ def sort_items(items_list: list):
 
     i = items_list.pop(5)
     items_list.insert(23, i)
+
+    try:
+        index = items_list.index('白蝦(4015)(批發)')
+        items_list.insert(index + 1, new_fish)
+    except ValueError:
+        items_list.append(new_fish)
 
 
 class Last5YearsReport(LoginRequiredMixin, TemplateView):

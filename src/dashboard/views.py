@@ -199,11 +199,7 @@ def sort_items(items_list: list):
     i = items_list.pop(5)
     items_list.insert(23, i)
 
-    try:
-        index = items_list.index('白蝦(4015)(批發)')
-        items_list.insert(index + 1, new_fish)
-    except ValueError:
-        items_list.append(new_fish)
+    items_list.insert(85, new_fish)
 
 
 class Last5YearsReport(LoginRequiredMixin, TemplateView):

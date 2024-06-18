@@ -5,9 +5,9 @@ services:
     container_name: aprp-postgres
     image: postgres:14-alpine
     volumes:
-      - pg-data:/var/lib/postgresql/data
-    expose:
-      - "5432"
+      - aprp_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=localhost
@@ -36,6 +36,8 @@ services:
     image: redis:4.0
     volumes:
       - redis-data:/data
+    ports:
+      - "6379:6379"
     networks:
       - main
 
@@ -141,6 +143,8 @@ volumes:
   pg-data:
   redis-data:
   pg-admin:
+  aprp_pg_data:
+    external: true
 
 
 networks:

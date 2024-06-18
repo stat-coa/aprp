@@ -171,8 +171,6 @@ def chart_tab_extra_context(view):
 
 
 def watchlist_base_chart_tab_extra_context(view):
-    extra_context = dict()
-
     # Captured values
     kwargs = view.kwargs
     content_type = kwargs.get('ct')
@@ -182,21 +180,14 @@ def watchlist_base_chart_tab_extra_context(view):
     watchlist_id = kwargs.get('wi')
     watchlist = Watchlist.objects.get(id=watchlist_id)
 
-    extra_context['watchlist'] = watchlist
+    extra_context = {'watchlist': watchlist}
 
     if content_type == 'config':
         config = Config.objects.get(id=object_id)
         extra_context['charts'] = config.charts.all()
+
     elif content_type == 'abstractproduct':
-        product = AbstractProduct.objects.get(id=object_id)
-        extra_context['charts'] = product.config.charts.all()
-        monitor_profiles = MonitorProfile.objects.filter(product__id=object_id).order_by('price')
-
-        extra_context['product'] = product
-        extra_context['types'] = product.types(watchlist=watchlist)
-
-        extra_context['monitor_profiles'] = monitor_profiles
-        extra_context['monitor_profiles_json'] = MonitorProfileSerializer(monitor_profiles, many=True).data
+        content_type_with_abstract_product(object_id, extra_context, watchlist)
 
     elif content_type in ['type', 'source']:
         if last_content_type == 'abstractproduct':
@@ -206,6 +197,18 @@ def watchlist_base_chart_tab_extra_context(view):
     extra_context['watchlists_json'] = WatchlistSerializer(Watchlist.objects.filter(watch_all=False), many=True).data
 
     return extra_context
+
+
+def content_type_with_abstract_product(object_id: str, extra_context: dict, watchlist: Watchlist):
+    product = AbstractProduct.objects.get(id=object_id)
+    extra_context['charts'] = product.config.charts.all()
+    monitor_profiles = MonitorProfile.objects.filter(product__id=object_id).order_by('price')
+
+    extra_context['product'] = product
+    extra_context['types'] = product.types(watchlist=watchlist)
+
+    extra_context['monitor_profiles'] = monitor_profiles
+    extra_context['monitor_profiles_json'] = MonitorProfileSerializer(monitor_profiles, many=True).data
 
 
 def product_selector_base_extra_context(view):

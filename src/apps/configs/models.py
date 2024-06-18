@@ -1,5 +1,3 @@
-from django.utils.translation import ugettext_lazy as _
-from model_utils.managers import InheritanceManager
 from django.db.models import (
     Model,
     QuerySet,
@@ -13,6 +11,9 @@ from django.db.models import (
     Q,
 )
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
+from model_utils.managers import InheritanceManager
+
 
 class AbstractProduct(Model):
     name = CharField(max_length=50, verbose_name=_('Name'))
@@ -39,9 +40,8 @@ class AbstractProduct(Model):
 
     def children(self, watchlist=None):
         products = AbstractProduct.objects.filter(parent=self).select_subclasses()
-        if watchlist:
-            if not watchlist.watch_all:
-                products = products.filter(id__in=watchlist.related_product_ids)
+        if watchlist and not watchlist.watch_all:
+            products = products.filter(id__in=watchlist.related_product_ids)
         return products.order_by('id')
 
     def children_all(self):
@@ -56,10 +56,11 @@ class AbstractProduct(Model):
     def types(self, watchlist=None):
         if self.has_child:
             products = self.children()
-            if watchlist:
-                if not watchlist.watch_all:
-                    products = products.filter(id__in=watchlist.related_product_ids)
+            
+            if watchlist and not watchlist.watch_all:
+                products = products.filter(id__in=watchlist.related_product_ids)
             type_ids = products.values_list('type__id', flat=True)
+            
             return Type.objects.filter(id__in=type_ids)
         elif self.type:
             return Type.objects.filter(id=self.type.id)
@@ -146,16 +147,17 @@ class Config(Model):
     def first_level_products(self, watchlist=None):
         # Use select_subclasses() to return subclass instance
         products = AbstractProduct.objects.filter(config=self).filter(parent=None).select_subclasses()
-        if watchlist:
-            if not watchlist.watch_all:
-                products = products.filter(id__in=watchlist.related_product_ids)
+        
+        if watchlist and not watchlist.watch_all:
+            products = products.filter(id__in=watchlist.related_product_ids)
+            
         return products.order_by('id')
 
     def types(self):
         products_qs = self.products().values('type').distinct()
         types_ids = [p['type'] for p in products_qs]
-        types_qs = Type.objects.filter(id__in=types_ids)
-        return types_qs
+        
+        return Type.objects.filter(id__in=types_ids)
 
     @property
     def to_direct(self):
@@ -171,10 +173,8 @@ class SourceQuerySet(QuerySet):
         if not isinstance(name, str):
             raise TypeError
         name = name.replace('台', '臺')
-        qs = self.filter(name=name)
-        if not qs:
-            qs = self.filter(alias__icontains=name)
-        return qs
+
+        return self.filter(name=name) or self.filter(alias__icontains=name)
 
 
 class Source(Model):
@@ -195,11 +195,11 @@ class Source(Model):
 
     def __str__(self):
         flat = self.configs_flat
-        return str(self.name) + '(%s-%s)' % (flat, self.type.name)
+        return f'{str(self.name)}({flat}-{self.type.name})'
 
     def __unicode__(self):
         flat = self.configs_flat
-        return str(self.name) + '(%s-%s)' % (flat, self.type.name)
+        return f'{str(self.name)}({flat}-{self.type.name})'
 
     @property
     def simple_name(self):

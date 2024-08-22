@@ -137,11 +137,11 @@ class Last5YearsReportFactory(object):
                     dayswithvolume += one_month_data.groupby('date').sum()['volume'].count()
 
                 else:
-                    totalprice += one_month_data['avg_price'].sum()
-                    avgprice = one_month_data['avg_price'].mean()
+                    totalprice += one_month_data.groupby('date').mean()['avg_price'].sum()
+                    avgprice = one_month_data.groupby('date').mean()['avg_price'].mean()
                     avgvolume = np.nan
                     avgweight = np.nan
-                    dayswithprice += one_month_data['avg_price'].count()
+                    dayswithprice += one_month_data.groupby('date').mean()['avg_price'].count()
 
                 avgprice_month_list.append(float(Context(prec=28, rounding=ROUND_HALF_UP).create_decimal(avgprice)))
                 # if has_volume:    # 特定產品於某年度9~12月份才開始有數據,原條件判斷會導致該年度9~12月份的數據變成1~4月   

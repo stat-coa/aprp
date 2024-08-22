@@ -116,16 +116,28 @@ class WatchlistItemQuerySet(QuerySet):
     """
     def get_unit(self):
         config = self.first().product.config
-        if self.values('product__type').count() > 0:
-            if config.type_level == 1:
-                unit = config.first_level_products().first().unit
-            elif config.type_level == 2:
-                unit = config.first_level_products().first().children().first().unit
-            else:
-                raise NotImplementedError('Can not locate product to access Unit object')
-            return unit
-        else:
+        if self.values('product__type').count() <= 0:
             return self.first().unit
+
+        # the products have multiple types(list or queryset)
+        if config.type_level == 1:
+            products = config.first_level_products()
+            unit = (
+                products[0].unit
+                if type(products) == list
+                else products.first().unit
+            )
+
+        elif config.type_level == 2:
+            products = config.first_level_products()
+            unit = (
+                products[0].children().first().unit
+                if type(products) == list
+                else products.first().unit
+            )
+        else:
+            raise NotImplementedError('Can not locate product to access Unit object')
+        return unit
 
 
 class WatchlistItem(Model):

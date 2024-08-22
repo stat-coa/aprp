@@ -289,6 +289,16 @@ REST_FRAMEWORK = {
 
 REDIS_URL = 'redis://{host}:{port}'.format(host=env.str('REDIS_HOST'), port=6379)
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
 
 # Celery
 

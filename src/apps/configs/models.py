@@ -13,6 +13,7 @@ from django.db.models import (
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils.managers import InheritanceManager
+from django.core.cache import cache
 
 
 class AbstractProduct(Model):
@@ -56,11 +57,11 @@ class AbstractProduct(Model):
     def types(self, watchlist=None):
         if self.has_child:
             products = self.children()
-            
+
             if watchlist and not watchlist.watch_all:
                 products = products.filter(id__in=watchlist.related_product_ids)
             type_ids = products.values_list('type__id', flat=True)
-            
+
             return Type.objects.filter(id__in=type_ids)
         elif self.type:
             return Type.objects.filter(id=self.type.id)
@@ -145,18 +146,38 @@ class Config(Model):
         return AbstractProduct.objects.filter(config=self).select_subclasses().order_by('id')
 
     def first_level_products(self, watchlist=None):
-        # Use select_subclasses() to return subclass instance
-        products = AbstractProduct.objects.filter(config=self).filter(parent=None).select_subclasses()
-        
-        if watchlist and not watchlist.watch_all:
-            products = products.filter(id__in=watchlist.related_product_ids)
-            
+        # using redis to reduce database handling
+        if watchlist:
+            cache_key = f"watchlist{watchlist.id}_config{self.id}_products"
+        else:
+            cache_key = f"config{self.id}_products"
+
+        products = cache.get(cache_key)
+
+        if products is None:
+            # Use select_subclasses() to return subclass instance
+            products = AbstractProduct.objects.filter(config=self).filter(parent=None).select_subclasses()
+
+            if watchlist and not watchlist.watch_all:
+                products = products.filter(id__in=watchlist.related_product_ids)
+
+            # cache for 11 hours(because the working time is from 8:00 to 19:00)
+            cache.set(cache_key, list(products.order_by('id')), timeout=3600 * 11)
+
+        return products
+
+    def boost_first_level_products(self, watchlist=None, ids: list=None):
+        products = AbstractProduct.objects.filter(config_id=self.id).filter(parent=None)
+
+        if watchlist and not watchlist.watch_all and ids:
+            products = products.filter(id__in=ids)
+
         return products.order_by('id')
 
     def types(self):
         products_qs = self.products().values('type').distinct()
         types_ids = [p['type'] for p in products_qs]
-        
+
         return Type.objects.filter(id__in=types_ids)
 
     @property
@@ -306,7 +327,7 @@ class Month(Model):
     def __unicode__(self):
         return str(self.name)
 
-        
+
 class Festival(Model):
     roc_year = CharField(max_length=3, default=timezone.now().year-1911, verbose_name=_('ROC Year'))
     name = ForeignKey('configs.FestivalName', null=True, blank=True, on_delete=SET_NULL, verbose_name=_('Name'))

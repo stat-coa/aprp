@@ -108,6 +108,7 @@ class WatchlistItemQuerySet(QuerySet):
             )
 
         return self.none()
+
     """
     for case like QuerySet.get_unit()
     if QuerySet products has multiple types, search for parent unit by config.type_level
@@ -119,22 +120,10 @@ class WatchlistItemQuerySet(QuerySet):
         if self.values('product__type').count() <= 0:
             return self.first().unit
 
-        # the products have multiple types(list or queryset)
         if config.type_level == 1:
-            products = config.first_level_products()
-            unit = (
-                products[0].unit
-                if type(products) == list
-                else products.first().unit
-            )
-
+            unit = config.first_level_products().first().unit
         elif config.type_level == 2:
-            products = config.first_level_products()
-            unit = (
-                products[0].children().first().unit
-                if type(products) == list
-                else products.first().unit
-            )
+            unit = config.first_level_products().first().children().first().unit
         else:
             raise NotImplementedError('Can not locate product to access Unit object')
         return unit

@@ -1,3 +1,5 @@
+import pickle
+
 from django.db.models import (
     Model,
     QuerySet,
@@ -146,7 +148,7 @@ class Config(Model):
         return AbstractProduct.objects.filter(config=self).select_subclasses().order_by('id')
 
     def first_level_products(self, watchlist=None):
-        # using redis to reduce database handling
+        # using redis to reduce database handling and using pickle to serialize the data
         if watchlist:
             cache_key = f"watchlist{watchlist.id}_config{self.id}_products"
         else:
@@ -162,7 +164,9 @@ class Config(Model):
                 products = products.filter(id__in=watchlist.related_product_ids)
 
             # cache for 11 hours(because the working time is from 8:00 to 19:00)
-            cache.set(cache_key, list(products.order_by('id')), timeout=3600 * 11)
+            cache.set(cache_key, pickle.dumps(products.order_by('id')), timeout=3600 * 11)
+        else:
+            products = pickle.loads(products)
 
         return products
 

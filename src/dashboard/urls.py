@@ -70,6 +70,8 @@ urlpatterns += i18n_patterns(
     url(r'^chart-tab/chart/$', ChartTabs.as_view(), name='chart_tab'),
     url(r'^chart-tab/watchlist/(?P<wi>\d+)/resource/(?P<ct>\w+)-(?P<oi>\d+)/$',
         ChartTabs.as_view(watchlist_base=True), name='chart_tab'),
+
+    # e.g. /zh-hant/chart-content/chart/1/watchlist/15/resource/abstractproduct-50039/sub-resource/config-6/
     url(r'^chart-tab/watchlist/(?P<wi>\d+)/resource/(?P<ct>\w+)-(?P<oi>\d+)/sub-resource/(?P<lct>\w+)-(?P<loi>\d+)/$',
         ChartTabs.as_view(watchlist_base=True), name='chart_tab'),
     # chart content ajax

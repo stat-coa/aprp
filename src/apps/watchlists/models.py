@@ -1,5 +1,6 @@
+import pickle
+
 from django.conf import settings
-from django.utils import timezone
 from django.db.models import (
     Model,
     CASCADE,
@@ -16,9 +17,11 @@ from django.db.models import (
     PositiveIntegerField,
     Q,
 )
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from apps.configs.models import Config, AbstractProduct
 
+from apps.configs.models import Config, AbstractProduct
+from dashboard.caches import redis_instance as cache
 
 COMPARATOR_CHOICES = [
     ('__lt__', _('<')),
@@ -34,6 +37,10 @@ COLOR_CHOICES = [
     ('warning', 'Warning'),
     ('danger', 'Danger'),
 ]
+
+RELATED_CONFIGS_CACHE_KEY = "watchlist{watchlist_id}_related_configs"
+CHILDREN_CACHE_KEY = "watchlist{watchlist_id}_children"
+FILTER_BY_PRODUCT_CACHE_KEY = "product{product_id}_filter_by_product"
 
 
 class Watchlist(Model):
@@ -79,11 +86,29 @@ class Watchlist(Model):
         return str(self.name)
 
     def children(self):
-        return WatchlistItem.objects.filter(parent=self)
+        cache_key = CHILDREN_CACHE_KEY.format(watchlist_id=self.id)
+
+        items = cache.get(cache_key)
+
+        if items is None:
+            items = WatchlistItem.objects.filter(parent=self)
+            cache.set(cache_key, pickle.dumps(items))
+        else:
+            items = pickle.loads(items)
+
+        return items
 
     def related_configs(self):
-        ids = self.children().values_list('product__config__id', flat=True).distinct()
-        return Config.objects.filter(id__in=ids).order_by('id')
+        configs = cache.get(RELATED_CONFIGS_CACHE_KEY.format(watchlist_id=self.id))
+
+        if configs is None:
+            ids = self.children().values_list('product__config__id', flat=True).distinct()
+            configs = Config.objects.filter(id__in=ids).order_by('id')
+            cache.set(RELATED_CONFIGS_CACHE_KEY.format(watchlist_id=self.id), pickle.dumps(configs))
+        else:
+            configs = pickle.loads(configs)
+
+        return configs
 
     @property
     def related_product_ids(self):
@@ -99,13 +124,23 @@ class WatchlistItemQuerySet(QuerySet):
         product = kwargs.get('product') or AbstractProduct.objects.filter(id=kwargs.get('product__id')).first()
 
         if product:
-            return self.filter(
-                Q(product=product)
-                | Q(product__parent=product)
-                | Q(product__parent__parent=product)
-                | Q(product__parent__parent__parent=product)
-                | Q(product__parent__parent__parent__parent=product)
-            )
+            cache_key = FILTER_BY_PRODUCT_CACHE_KEY.format(product_id=product.id)
+
+            products = cache.get(cache_key)
+
+            if products is None:
+                products = self.filter(
+                    Q(product=product)
+                    | Q(product__parent=product)
+                    | Q(product__parent__parent=product)
+                    | Q(product__parent__parent__parent=product)
+                    | Q(product__parent__parent__parent__parent=product)
+                )
+                cache.set(cache_key, pickle.dumps(products))
+            else:
+                products = pickle.loads(products)
+
+            return products
 
         return self.none()
 

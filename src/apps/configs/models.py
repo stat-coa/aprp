@@ -12,6 +12,7 @@ from django.db.models import (
     BooleanField,
     Q,
 )
+from django.db.models.signals import post_save
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils.managers import InheritanceManager
@@ -460,6 +461,8 @@ class FestivalItems(Model):
 
 
 class Last5YearsItems(Model):
+    LAST5_YEARS_ITEMS_CACHE_KEY = 'last5_years_items'
+
     name = CharField(max_length=60, verbose_name=_('Name'))
     enable = BooleanField(default=True, verbose_name=_('Enabled'))
     product_id = ManyToManyField('configs.AbstractProduct', verbose_name=_('Product_id'))
@@ -475,3 +478,14 @@ class Last5YearsItems(Model):
 
     def __unicode__(self):
         return self.name
+
+
+def instance_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        instance.save()
+        return
+    else:
+        cache.delete_keys_by_model_instance(instance, Last5YearsItems, key=Last5YearsItems.LAST5_YEARS_ITEMS_CACHE_KEY)
+
+
+post_save.connect(instance_post_save, sender=Last5YearsItems)

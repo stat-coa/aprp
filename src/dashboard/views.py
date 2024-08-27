@@ -1,4 +1,5 @@
 import itertools
+import pickle
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -21,6 +22,7 @@ from apps.configs.models import (
     Last5YearsItems,
 )
 from apps.watchlists.models import Watchlist
+from dashboard.caches import redis_instance as cache
 from dashboard.mock_celery import app
 from .utils import (
     jarvismenu_extra_context,
@@ -213,6 +215,21 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(Last5YearsReport, self).get_context_data(**kwargs)
+        all_items = cache.get(Last5YearsItems.LAST5_YEARS_ITEMS_CACHE_KEY)
+
+        all_items = self._get_items() if all_items is None else pickle.loads(all_items)
+        context['items_list'] = all_items
+
+        return context
+
+    @staticmethod
+    def _get_items():
+        """
+        Get last 5 years items from database and store in cache
+        """
+
+        result = {}
+
         # 品項
         qs = Last5YearsItems.objects.filter(enable=True).order_by('product_id')
 
@@ -225,7 +242,6 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
 
         sort_items(items_list)
 
-        all_items = {}
         for i in items_list:
             pids = i.product_id.all()
             sources = i.source.all()
@@ -234,10 +250,12 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
             pid = ','.join(pid_list)
             source = ','.join(source_list)
 
-            all_items[i.name] = {'product_id': pid, 'source': source}
+            result[i.name] = {'product_id': pid, 'source': source}
 
-        context['items_list'] = all_items
-        return context
+        # store in cache
+        cache.set(Last5YearsItems.LAST5_YEARS_ITEMS_CACHE_KEY, pickle.dumps(result))
+
+        return result
 
 
 class ProductSelector(LoginRequiredMixin, TemplateView):

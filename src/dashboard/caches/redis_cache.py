@@ -40,7 +40,7 @@ class RedisCache:
                 cleaned_keys = [key.decode().lstrip(':1:') for key in keys]
                 self.delete_keys(cleaned_keys)
 
-    def delete_keys_by_model_instance(self, instance, model):
+    def delete_keys_by_model_instance(self, instance, model, key=None):
         """
         This method will call by `post_save` signal to delete cache keys
         """
@@ -57,3 +57,6 @@ class RedisCache:
                 self.delete_keys_with_pattern(f'*config{config.id}*')
             if watchlist_item:
                 self.delete_keys_with_pattern(f'*watchlist{watchlist_item.parent.id}*')
+
+        elif model._meta.object_name == 'Last5YearsItems' and isinstance(instance, model):
+            self.delete(key)

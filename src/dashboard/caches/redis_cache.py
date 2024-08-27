@@ -39,3 +39,21 @@ class RedisCache:
                 # remove prefix from keys because cache keys do not need to prefix to delete
                 cleaned_keys = [key.decode().lstrip(':1:') for key in keys]
                 self.delete_keys(cleaned_keys)
+
+    def delete_keys_by_model_instance(self, instance, model):
+        """
+        This method will call by `post_save` signal to delete cache keys
+        """
+
+        # this is a hack to avoid circular import and this condition only for the model argument that
+        # is `AbstractProduct` class
+        if model._meta.object_name == 'AbstractProduct' and isinstance(instance, model):
+            self.delete_keys_with_pattern(f'*product{instance.id}*')
+
+            config = instance.config
+            watchlist_item = instance.watchlistitem_set.last()
+
+            if config:
+                self.delete_keys_with_pattern(f'*config{config.id}*')
+            if watchlist_item:
+                self.delete_keys_with_pattern(f'*watchlist{watchlist_item.parent.id}*')

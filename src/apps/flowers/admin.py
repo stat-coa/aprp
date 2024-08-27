@@ -19,5 +19,11 @@ class FlowerAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'code', 'type', 'parent', 'track_item', 'update_time']
     list_editable = ['name', 'code', 'type', 'parent', 'track_item']
 
+    search_fields = (
+        'id',
+        'code',
+        'name',
+    )
+
 
 admin.site.register(Flower, FlowerAdmin)

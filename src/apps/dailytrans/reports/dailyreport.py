@@ -157,6 +157,7 @@ class DailyReportFactory(object):
 
     def get_data(self, query_set, product, row, monitor_price):
         qs, has_volume, has_weight = get_group_by_date_query_set(query_set, self.last_week_start, self.this_week_end)
+        qs['date'] = pd.to_datetime(qs['date'])
         self.result[product] = {}
         for i, q in qs.iterrows():
 
@@ -170,18 +171,17 @@ class DailyReportFactory(object):
                         'sum_volume'
                     ]
                      })
-        last_qs = qs[(pd.to_datetime(qs['date']) >= self.last_week_start)
-                     & (pd.to_datetime(qs['date']) <= self.last_week_end)]
-        this_qs = qs[(pd.to_datetime(qs['date']) >= self.this_week_start)
-                     & (pd.to_datetime(qs['date']) <= self.this_week_end)]
+        last_qs = qs[(qs['date'].dt.date >= self.last_week_start.date())
+                     & (qs['date'].dt.date <= self.last_week_end.date())]
+        this_qs = qs[(qs['date'].dt.date >= self.this_week_start.date())
+                     & (qs['date'].dt.date <= self.this_week_end.date())]
+
         last_avg_price = get_avg_price(last_qs, has_volume, has_weight)
         this_avg_price = get_avg_price(this_qs, has_volume, has_weight)
         if last_avg_price > 0:
             self.result[product].update(
                 {
-                    f'L{row}': (this_avg_price - last_avg_price)
-                               / last_avg_price
-                               * 100
+                    f'L{row}': (this_avg_price - last_avg_price) / last_avg_price * 100
                 }
             )
         if has_volume:
@@ -191,9 +191,7 @@ class DailyReportFactory(object):
             if last_avg_volume > 0:
                 self.result[product].update(
                     {
-                        f'U{row}': (this_avg_volume - last_avg_volume)
-                                   / last_avg_volume
-                                   * 100
+                        f'U{row}': (this_avg_volume - last_avg_volume) / last_avg_volume * 100
                     }
                 )
         if monitor_price:

@@ -99,8 +99,8 @@ def get_avg_price(qs, has_volume, has_weight):
         return qs['avg_price'].mean()
 
 
-def get_avg_volume(qs, week_start=None, week_end=None):
-    return qs['sum_volume'].mean()
+def get_avg_volume(qs):
+    return qs['sum_volume'].mean() if not pd.isna(qs['sum_volume'].mean()) else 0
 
 
 class DailyReportFactory(object):
@@ -170,10 +170,12 @@ class DailyReportFactory(object):
                         'sum_volume'
                     ]
                      })
-        last_avg_price = get_avg_price(qs[(pd.to_datetime(qs['date']) >= self.last_week_start)
-                                          & (pd.to_datetime(qs['date']) <= self.last_week_end)], has_volume, has_weight)
-        this_avg_price = get_avg_price(qs[(pd.to_datetime(qs['date']) >= self.this_week_start)
-                                          & (pd.to_datetime(qs['date']) <= self.this_week_end)], has_volume, has_weight)
+        last_qs = qs[(pd.to_datetime(qs['date']) >= self.last_week_start)
+                     & (pd.to_datetime(qs['date']) <= self.last_week_end)]
+        this_qs = qs[(pd.to_datetime(qs['date']) >= self.this_week_start)
+                     & (pd.to_datetime(qs['date']) <= self.this_week_end)]
+        last_avg_price = get_avg_price(last_qs, has_volume, has_weight)
+        this_avg_price = get_avg_price(this_qs, has_volume, has_weight)
         if last_avg_price > 0:
             self.result[product].update(
                 {
@@ -183,8 +185,8 @@ class DailyReportFactory(object):
                 }
             )
         if has_volume:
-            last_avg_volume = get_avg_volume(qs, self.last_week_start, self.last_week_end)
-            this_avg_volume = get_avg_volume(qs, self.this_week_start, self.this_week_end)
+            last_avg_volume = get_avg_volume(last_qs)
+            this_avg_volume = get_avg_volume(this_qs)
             self.result[product].update({f'T{row}': this_avg_volume})
             if last_avg_volume > 0:
                 self.result[product].update(
@@ -450,10 +452,12 @@ class DailyReportFactory(object):
 
         return wb
 
-    def __call__(self, output_dir=settings.BASE_DIR):
+    def __call__(self, output_dir=settings.BASE_DIR('apps/dailytrans/reports')):
         date = self.specify_day + datetime.timedelta(1)
-        file_name = f'{self.roc_date_format(self.this_week_start)}-{self.roc_date_format(self.this_week_end)}價格{WEEKDAY.get(date.weekday())}.xlsx'
-
+        file_name = '{}-{}價格{}.xlsx'.format(
+            self.roc_date_format(self.this_week_start),
+            self.roc_date_format(self.this_week_end),
+            WEEKDAY.get(date.weekday()))
         file_path = Path(output_dir, file_name)
 
         self.report()

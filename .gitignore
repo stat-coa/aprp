@@ -114,3 +114,4 @@ ENV/
 # pycharm
 .idea
 *.pyc
+*.sql

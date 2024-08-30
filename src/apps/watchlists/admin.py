@@ -43,7 +43,12 @@ class WatchlistItemModelForm(ModelForm):
 
 class WatchlistItemAdmin(admin.ModelAdmin):
     form = WatchlistItemModelForm
-    list_display = ['id', 'product', 'update_time']
+    list_display = ['id', 'product', 'parent', 'update_time']
+
+    search_fields = (
+        'id',
+        'product__name',
+    )
 
 
 class WatchlistModelForm(ModelForm):

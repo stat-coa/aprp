@@ -148,6 +148,11 @@ class Last5YearsItemsAdmin(admin.ModelAdmin):
     form = Last5YearsItemsModelForm
     list_display = ['id', 'name', 'enable', 'update_time', 'create_time']
     list_editable = ['name', 'enable']
+
+    search_fields = (
+        'id',
+        'name',
+    )
     
 admin.site.register(AbstractProduct, AbstractProductAdmin)
 admin.site.register(Config, ConfigAdmin)

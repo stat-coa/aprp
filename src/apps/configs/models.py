@@ -1,3 +1,5 @@
+import pickle
+
 from django.db.models import (
     Model,
     QuerySet,
@@ -10,9 +12,23 @@ from django.db.models import (
     BooleanField,
     Q,
 )
+from django.db.models.signals import post_save
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils.managers import InheritanceManager
+
+from dashboard.caches import redis_instance as cache
+
+CHILDREN_CACHE_KEY = "watchlist{watchlist_id}_product{product_id}_children"
+CHILDREN_ALL_CACHE_KEY = "product{product_id}_children_all"
+TYPES_CACHE_KEY = "product{product_id}_types"
+TYPE_CACHE_KEY = "product{product_id}_type"
+SOURCES_WITH_WATCHLIST_CACHE_KEY = "product{product_id}_sources_with_watchlist"
+SOURCES_CACHE_KEY = "product{product_id}_sources"
+FIRST_LEVEL_PRODUCTS_WITH_WATCHLIST_CACHE_KEY = "watchlist{watchlist_id}_config{config_id}_lv1_products"
+FIRST_LEVEL_PRODUCTS_CACHE_KEY = "config{config_id}_lv1_products"
+PRODUCTS_CACHE_KEY = "config{config_id}_products"
+TYPES_FILTER_BY_WATCHLIST_ITEMS = "types_filter_by_watchlist_items{hash_id}"
 
 
 class AbstractProduct(Model):
@@ -39,13 +55,32 @@ class AbstractProduct(Model):
         return str(self.name)
 
     def children(self, watchlist=None):
-        products = AbstractProduct.objects.filter(parent=self).select_subclasses()
-        if watchlist and not watchlist.watch_all:
-            products = products.filter(id__in=watchlist.related_product_ids)
-        return products.order_by('id')
+        if watchlist:
+            cache_key = CHILDREN_CACHE_KEY.format(watchlist_id=watchlist.id, product_id=self.id)
+        else:
+            cache_key = f"product{self.id}_children"
+
+        products = cache.get(cache_key)
+
+        if products is None:
+            products = AbstractProduct.objects.filter(parent=self).select_subclasses()
+
+            if watchlist and not watchlist.watch_all:
+                products = products.filter(id__in=watchlist.related_product_ids)
+
+            cache.set(cache_key, pickle.dumps(products.order_by('id')))
+        else:
+            products = pickle.loads(products)
+
+        return products
 
     def children_all(self):
-        return AbstractProduct.objects.filter(
+        cache_key = CHILDREN_ALL_CACHE_KEY.format(product_id=self.id)
+
+        products = cache.get(cache_key)
+
+        if products is None:
+            products = AbstractProduct.objects.filter(
             Q(parent=self)
             | Q(parent__parent=self)
             | Q(parent__parent__parent=self)
@@ -53,17 +88,41 @@ class AbstractProduct(Model):
             | Q(parent__parent__parent__parent__parent=self)
         ).select_subclasses().order_by('id')
 
+            cache.set(cache_key, pickle.dumps(products))
+        else:
+            products = pickle.loads(products)
+
+        return products
+
     def types(self, watchlist=None):
         if self.has_child:
-            products = self.children()
-            
-            if watchlist and not watchlist.watch_all:
-                products = products.filter(id__in=watchlist.related_product_ids)
-            type_ids = products.values_list('type__id', flat=True)
-            
-            return Type.objects.filter(id__in=type_ids)
+            cache_key = TYPES_CACHE_KEY.format(product_id=self.id)
+            types = cache.get(cache_key)
+
+            if types is None:
+                products = self.children()
+
+                if watchlist and not watchlist.watch_all:
+                    products = products.filter(id__in=watchlist.related_product_ids)
+
+                type_ids = products.values_list('type__id', flat=True)
+                types = Type.objects.filter(id__in=type_ids)
+                cache.set(cache_key, pickle.dumps(types))
+            else:
+                types = pickle.loads(types)
+
+            return types
         elif self.type:
-            return Type.objects.filter(id=self.type.id)
+            cache_key = TYPE_CACHE_KEY.format(product_id=self.id)
+            _type = cache.get(cache_key)
+
+            if _type is None:
+                _type = Type.objects.filter(id=self.type.id)
+                cache.set(cache_key, pickle.dumps(_type))
+            else:
+                _type = pickle.loads(_type)
+
+            return _type
         else:
             return self.objects.none()
 
@@ -141,22 +200,46 @@ class Config(Model):
         return str(self.name)
 
     def products(self):
-        # Use select_subclasses() to return subclass instance
-        return AbstractProduct.objects.filter(config=self).select_subclasses().order_by('id')
+        cache_key = PRODUCTS_CACHE_KEY.format(config_id=self.id)
+        products = cache.get(cache_key)
+
+        if products is None:
+            # Use select_subclasses() to return subclass instance
+            products = AbstractProduct.objects.filter(config=self).select_subclasses().order_by('id')
+            cache.set(cache_key, pickle.dumps(products))
+        else:
+            products = pickle.loads(products)
+
+        return products
 
     def first_level_products(self, watchlist=None):
-        # Use select_subclasses() to return subclass instance
-        products = AbstractProduct.objects.filter(config=self).filter(parent=None).select_subclasses()
-        
-        if watchlist and not watchlist.watch_all:
-            products = products.filter(id__in=watchlist.related_product_ids)
-            
-        return products.order_by('id')
+        # using redis to reduce database handling and using pickle to serialize the data
+        if watchlist:
+            cache_key = FIRST_LEVEL_PRODUCTS_WITH_WATCHLIST_CACHE_KEY.format(
+                watchlist_id=watchlist.id, config_id=self.id
+            )
+        else:
+            cache_key = FIRST_LEVEL_PRODUCTS_CACHE_KEY.format(config_id=self.id)
+
+        products = cache.get(cache_key)
+
+        if products is None:
+            # Use select_subclasses() to return subclass instance
+            products = AbstractProduct.objects.filter(config=self).filter(parent=None).select_subclasses()
+
+            if watchlist and not watchlist.watch_all:
+                products = products.filter(id__in=watchlist.related_product_ids)
+
+            cache.set(cache_key, pickle.dumps(products.order_by('id')))
+        else:
+            products = pickle.loads(products)
+
+        return products
 
     def types(self):
         products_qs = self.products().values('type').distinct()
         types_ids = [p['type'] for p in products_qs]
-        
+
         return Type.objects.filter(id__in=types_ids)
 
     @property
@@ -222,7 +305,18 @@ class TypeQuerySet(QuerySet):
         items = kwargs.get('watchlist_items')
         if not items:
             raise NotImplementedError
-        return self.filter(id__in=items.values_list('product__type__id', flat=True))
+
+        ids = items.values_list('product__type__id', flat=True)
+        cache_key = TYPES_FILTER_BY_WATCHLIST_ITEMS.format(hash_id=hash(str(ids)))
+        types = cache.get(cache_key)
+
+        if types is None:
+            types = self.filter(id__in=ids)
+            cache.set(cache_key, pickle.dumps(types))
+        else:
+            types = pickle.loads(types)
+
+        return types
 
 
 class Type(Model):
@@ -306,7 +400,7 @@ class Month(Model):
     def __unicode__(self):
         return str(self.name)
 
-        
+
 class Festival(Model):
     roc_year = CharField(max_length=3, default=timezone.now().year-1911, verbose_name=_('ROC Year'))
     name = ForeignKey('configs.FestivalName', null=True, blank=True, on_delete=SET_NULL, verbose_name=_('Name'))
@@ -367,6 +461,8 @@ class FestivalItems(Model):
 
 
 class Last5YearsItems(Model):
+    LAST5_YEARS_ITEMS_CACHE_KEY = 'last5_years_items'
+
     name = CharField(max_length=60, verbose_name=_('Name'))
     enable = BooleanField(default=True, verbose_name=_('Enabled'))
     product_id = ManyToManyField('configs.AbstractProduct', verbose_name=_('Product_id'))
@@ -382,3 +478,14 @@ class Last5YearsItems(Model):
 
     def __unicode__(self):
         return self.name
+
+
+def instance_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        instance.save()
+        return
+    else:
+        cache.delete_keys_by_model_instance(instance, Last5YearsItems, key=Last5YearsItems.LAST5_YEARS_ITEMS_CACHE_KEY)
+
+
+post_save.connect(instance_post_save, sender=Last5YearsItems)

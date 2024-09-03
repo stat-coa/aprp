@@ -60,13 +60,18 @@ urlpatterns += i18n_patterns(
     url(r'^$', Index.as_view(), name='index'),
     url(r'^about/', About.as_view(), name='about'),
     url(r'^browser-not-support/', BrowserNotSupport.as_view(), name='browser_not_support'),
+
     # jarvis menu ajax
+    # e.g. /zh-hant/jarvismenu/14/config/6/
     url(r'^jarvismenu/(?P<wi>\d+)/(?P<ct>\w+)/(?P<oi>\d+)/$', JarvisMenu.as_view(), name='jarvismenu'),
+    # e.g. /zh-hant/jarvismenu/14/abstractproduct/50039/config/6/
     url(r'^jarvismenu/(?P<wi>\d+)/(?P<ct>\w+)/(?P<oi>\d+)/(?P<lct>\w+)/(?P<loi>\d+)/$', JarvisMenu.as_view(), name='jarvismenu'),
     # chart tab ajax
     url(r'^chart-tab/chart/$', ChartTabs.as_view(), name='chart_tab'),
     url(r'^chart-tab/watchlist/(?P<wi>\d+)/resource/(?P<ct>\w+)-(?P<oi>\d+)/$',
         ChartTabs.as_view(watchlist_base=True), name='chart_tab'),
+
+    # e.g. /zh-hant/chart-content/chart/1/watchlist/15/resource/abstractproduct-50039/sub-resource/config-6/
     url(r'^chart-tab/watchlist/(?P<wi>\d+)/resource/(?P<ct>\w+)-(?P<oi>\d+)/sub-resource/(?P<lct>\w+)-(?P<loi>\d+)/$',
         ChartTabs.as_view(watchlist_base=True), name='chart_tab'),
     # chart content ajax

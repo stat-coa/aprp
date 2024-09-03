@@ -1,19 +1,13 @@
 import datetime
-import operator
 import json
+import operator
+import pickle
 from functools import reduce
-from django.http.request import QueryDict
+
 from django.contrib.contenttypes.models import ContentType
-from apps.watchlists.models import (
-    Watchlist,
-    MonitorProfile,
-)
-from apps.dailytrans.utils import (
-    get_daily_price_volume,
-    get_daily_price_by_year,
-    get_monthly_price_distribution,
-    get_integration,
-)
+from django.http.request import QueryDict
+
+from apps.configs.api.serializers import UnitSerializer
 from apps.configs.models import (
     Config,
     AbstractProduct,
@@ -21,13 +15,26 @@ from apps.configs.models import (
     Type,
     Chart,
 )
-from apps.configs.api.serializers import UnitSerializer
+from apps.dailytrans.utils import (
+    get_daily_price_volume,
+    get_daily_price_by_year,
+    get_monthly_price_distribution,
+    get_integration,
+)
+from apps.dailytrans.utils import to_date
+from apps.events.forms import EventForm
 from apps.watchlists.api.serializers import (
     MonitorProfileSerializer,
     WatchlistSerializer,
 )
-from apps.events.forms import EventForm
-from apps.dailytrans.utils import to_date
+from apps.watchlists.models import (
+    Watchlist,
+    MonitorProfile,
+)
+from dashboard.caches import redis_instance as cache
+
+CONTENT_TYPE_CONFIG_CHARTS_CACHE_KEY = "content_type_config{config_id}_charts"
+CONTENT_TYPE_PRODUCT_CHARTS_CACHE_KEY = "content_type_product{product_id}_charts"
 
 
 def jarvismenu_extra_context(view):
@@ -184,7 +191,16 @@ def watchlist_base_chart_tab_extra_context(view):
 
     if content_type == 'config':
         config = Config.objects.get(id=object_id)
-        extra_context['charts'] = config.charts.all()
+        cache_key = CONTENT_TYPE_CONFIG_CHARTS_CACHE_KEY.format(config_id=config.id)
+        charts = cache.get(cache_key)
+
+        if charts is None:
+            charts = config.charts.all()
+            cache.set(cache_key, pickle.dumps(charts))
+        else:
+            charts = pickle.loads(charts)
+
+        extra_context['charts'] = charts
 
     elif content_type == 'abstractproduct':
         content_type_with_abstract_product(object_id, extra_context, watchlist)
@@ -192,7 +208,16 @@ def watchlist_base_chart_tab_extra_context(view):
     elif content_type in ['type', 'source']:
         if last_content_type == 'abstractproduct':
             product = AbstractProduct.objects.get(id=last_object_id)
-            extra_context['charts'] = product.config.charts.all()
+            cache_key = CONTENT_TYPE_PRODUCT_CHARTS_CACHE_KEY.format(product_id=product.id)
+            charts = cache.get(cache_key)
+
+            if charts is None:
+                charts = product.config.charts.all()
+                cache.set(cache_key, pickle.dumps(charts))
+            else:
+                charts = pickle.loads(charts)
+
+            extra_context['charts'] = charts
 
     extra_context['watchlists_json'] = WatchlistSerializer(Watchlist.objects.filter(watch_all=False), many=True).data
 
@@ -201,7 +226,15 @@ def watchlist_base_chart_tab_extra_context(view):
 
 def content_type_with_abstract_product(object_id: str, extra_context: dict, watchlist: Watchlist):
     product = AbstractProduct.objects.get(id=object_id)
-    extra_context['charts'] = product.config.charts.all()
+    cache_key = CONTENT_TYPE_PRODUCT_CHARTS_CACHE_KEY.format(product_id=product.id)
+    charts = cache.get(cache_key)
+
+    if charts is None:
+        charts = product.config.charts.all()
+        cache.set(cache_key, pickle.dumps(charts))
+    else:
+        charts = pickle.loads(charts)
+    extra_context['charts'] = charts
     monitor_profiles = MonitorProfile.objects.filter(product__id=object_id).order_by('price')
 
     extra_context['product'] = product
@@ -295,8 +328,7 @@ def product_selector_base_extra_context(view):
 
 
 def watchlist_base_chart_contents_extra_context(view):
-
-    extra_context = dict()
+    extra_context = {}
 
     # Captured values
     kwargs = view.kwargs
@@ -310,7 +342,6 @@ def watchlist_base_chart_contents_extra_context(view):
     # Post data
     data = kwargs.get('POST') or QueryDict()
     selected_years = data.getlist('average_years[]')
-
     watchlist = Watchlist.objects.get(id=watchlist_id)
 
     # selected sources

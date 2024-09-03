@@ -117,3 +117,5 @@ ENV/
 *.xlsx
 *.ipynb
 src/.Trash-*/
+
+*.sql

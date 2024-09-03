@@ -19,9 +19,11 @@ on stackoverflow:
 The solution here is provide post_save signal and execute save(), because loaddata
 command will not call pre_save() and save()
 """
-from django.utils.translation import ugettext_lazy as _
-from apps.configs.models import AbstractProduct
 from django.db.models.signals import post_save
+from django.utils.translation import ugettext_lazy as _
+
+from apps.configs.models import AbstractProduct
+from dashboard.caches import redis_instance as cache
 
 
 class Fruit(AbstractProduct):
@@ -34,6 +36,8 @@ def instance_post_save(sender, instance, created, **kwargs):
     if kwargs.get('raw'):
         instance.save()
         return
+    else:
+        cache.delete_keys_by_model_instance(instance, AbstractProduct)
 
 
 post_save.connect(instance_post_save, sender=Fruit)

@@ -405,11 +405,11 @@ class DailyReportFactory(object):
                 # 資料來源字型統一為標楷體
                 cell.font = Font(name='標楷體', size=13)
                 row_no = cell.row
-                if row_no > 134:
+                if row_no > 135:
                     cell.value = None
 
-        sheet.cell(row=134, column=1).value = sheet.cell(row=133, column=1).value.replace('本會', '本部')
-        sheet.cell(row=135, column=1).value = sheet.cell(row=134, column=1).value.replace('本會', '本部')
+        sheet.cell(row=134, column=1).value = sheet.cell(row=134, column=1).value.replace('本會', '本部')
+        sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
 
         now_row = 136
         # 一般農產品的資料來源說明欄位處理

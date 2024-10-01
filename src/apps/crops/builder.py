@@ -46,12 +46,15 @@ def direct_origin(start_date, end_date, *args, **kwargs):
 
     for model in MODELS:
         origin_api = OriginApi(model=model, **data._asdict())
-
-        for obj in product_generator(model, type=2, **kwargs):
-            for delta_start_date, delta_end_date in date_generator(start_date, end_date, ORIGIN_DELTA_DAYS):
-                response = origin_api.request(start_date=delta_start_date, end_date=delta_end_date, name=obj.code)
-                origin_api.load(response)
-
+        date_diff = end_date - start_date
+        for delta in range(date_diff.days + 1):
+            response = origin_api.request(start_date=start_date + datetime.timedelta(days=delta),
+                                          end_date=start_date + datetime.timedelta(days=delta), *args, **kwargs)
+            origin_api.load(response)
+            # response_garlic = origin_api.request(start_date=start_date + datetime.timedelta(days=delta),
+            #                                      end_date=start_date + datetime.timedelta(days=delta),
+            #                                      name='蒜頭(蒜球)(旬價)')
+            # origin_api.load(response_garlic)
     return data
 
 

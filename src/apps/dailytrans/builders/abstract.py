@@ -6,6 +6,7 @@ from django.conf import settings
 from apps.configs.models import (
     Source,
     Config,
+    Type,
 )
 
 
@@ -44,6 +45,7 @@ class AbstractApi(object):
             self.PRODUCT_QS = self.MODEL.objects
 
         if type_id:
+            self.TYPE = Type.objects.get(id=type_id)
             self.SOURCE_QS = self.SOURCE_QS.filter(type__id=type_id)
             self.PRODUCT_QS = self.PRODUCT_QS.filter(type__id=type_id, track_item=True)
 

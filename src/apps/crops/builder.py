@@ -26,6 +26,11 @@ def direct(*args, **kwargs):
 
 @director
 def direct_wholesale_05(start_date, end_date, *args, **kwargs):
+    """
+    此 API 為農業部 open data 提供，主要用來抓取批發市場價格資料
+    """
+
+    # config_type=COG05 -> 蔬菜, type_id=1 -> 批發
     data = DirectData('COG05', 1, LOGGER_TYPE_CODE)
 
     for model in MODELS:
@@ -33,6 +38,7 @@ def direct_wholesale_05(start_date, end_date, *args, **kwargs):
         date_diff = end_date - start_date
 
         for delta in range(date_diff.days + 1):
+            # tc_type=N04 -> 蔬菜
             response = wholesale_api.request(start_date=start_date + datetime.timedelta(days=delta),
                                              end_date=start_date + datetime.timedelta(days=delta), tc_type='N04')
             wholesale_api.load(response)
@@ -42,6 +48,11 @@ def direct_wholesale_05(start_date, end_date, *args, **kwargs):
 
 @director
 def direct_origin(start_date, end_date, *args, **kwargs):
+    """
+    此 API 為農糧署農產品產地價格查報系統提供，主要用來抓取產地價格資料
+    """
+
+    # config_type=COG05 -> 蔬菜, type_id=1 -> 產地
     data = DirectData('COG05', 2, LOGGER_TYPE_CODE)
 
     for model in MODELS:
@@ -60,6 +71,11 @@ def direct_origin(start_date, end_date, *args, **kwargs):
 
 @director
 def direct_wholesale_02(start_date, end_date, *args, **kwargs):
+    """
+    此 API 由由農糧署廠商提供，主要用來抓取各批發市場當日總量與平均價格，相對於上面兩個 API，此 API 較不重要
+    """
+
+    # config_type=COG02 -> 蔬菜-批發合計, type_id=1 -> 批發
     data = DirectData('COG02', 1, LOGGER_TYPE_CODE)
 
     for model in MODELS:

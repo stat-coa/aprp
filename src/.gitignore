@@ -1,6 +1,7 @@
 # local
 local.py
 live-static-files/
+tests/fixtures/
 
 *.sqlite
 *.DS_Store

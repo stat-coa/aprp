@@ -127,17 +127,38 @@ DirectData = namedtuple('DirectData', ('config_code', 'type_id', 'logger_type_co
 
 
 def director(func):
+    """
+    任何以 `direct` 開頭的 function 都會使用此 decorator 來包裝
+    目的在於統一處理參數的檢查與錯誤處理以及在 func 執行前後做一些操作:
+    func 執行前 -> 檢查日期格式是否正確、計算日期區間、轉換日期格式
+    func 執行後 -> 更新 DailyTran 的 not_updated 欄位
+
+    :param func: 用來執行抓資料的 function
+    """
 
     @wraps(func)
     def interface(start_date=None, end_date=None, format=None, delta=None, **kwargs):
+        """
+        於 `func` 前後做一些操作，並回傳 DirectResult
+
+        :param start_date: 起始日期，datetime.date 或 str
+        :param end_date: 結束日期，datetime.date 或 str
+        :param format: str，日期格式，前兩個參數如果為字串則做對應格式轉換('%Y-%m-%d'、'%Y.%m.%d' '%Y/%m/%d' etc.)
+        :param delta: int，日期區間，計算起始點為當日，往前 delta 天
+        :param kwargs: code, name(產品代碼、名稱，目前很少使用，並且只有手動執行時才會傳入)
+        :return: DirectResult
+        """
 
         code = kwargs.get('code')
         name = kwargs.get('name')
 
+        # 起始日期與結束日期若傳入任一，則另一個也必須傳入
         if start_date and not end_date:
             raise NotImplementedError
         if end_date and not start_date:
             raise NotImplementedError
+
+        # 檢查日期參數型別(兩個日期參數只有手動執行時才會輸入)
         if start_date and end_date:
             ii = isinstance
             d = datetime.date
@@ -150,12 +171,15 @@ def director(func):
             if ii(start_date, d) and ii(end_date, d):
                 if format:
                     raise NotImplementedError
+
+            # 若日期參數為 str，則以 `format` 參數轉換成 datetime.date
             if not ii(start_date, d) and not ii(end_date, d):
                 if not format:
                     raise NotImplementedError
                 start_date = datetime.datetime.strptime(start_date, format)
                 end_date = datetime.datetime.strptime(end_date, format)
 
+        # 若未傳入日期參數，則以 `delta` 參數計算日期區間
         else:
             if not delta:
                 NotImplementedError
@@ -163,10 +187,14 @@ def director(func):
 
         try:
             start_time = timezone.now()
+
+            # main point: 執行 func 並取得回傳值
             data = func(start_date, end_date, **kwargs)
+
             end_time = timezone.now()
             duration = end_time - start_time
 
+            # TODO: 針對 DailyTran 的 not_updated 欄位進行更新，目前看不出用途，並且資料庫開銷很大，若不影響其他功能，建議移除
             if isinstance(data, DirectData):
                 # update not_updated count
                 qs = DailyTran.objects.filter(product__config__code=data.config_code,
@@ -182,6 +210,7 @@ def director(func):
                     qs = qs.filter(product__type__id=data.type_id)
 
                 for d in qs.filter(update_time__lte=start_time):
+                    # config_code 在 蔬菜、水果及漁產品以外，或是 type_id 不為 1(批發) 的資料(產地、零售)
                     if data.config_code not in ['COG05', 'COG06', 'COG13'] or data.type_id != 1:
                         if name is None and code is None and kwargs.get('history') is None:
                             d.not_updated += 1

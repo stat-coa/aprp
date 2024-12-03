@@ -1,31 +1,28 @@
-from django.db.models import Q
 import datetime
-import json
 import re
-from .utils import date_transfer
-from .abstract import AbstractApi
-from apps.dailytrans.models import DailyTran
-import urllib3
-import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
+from typing import List
+
+import pandas as pd
+import urllib3
+from requests import Response
+
+from apps.dailytrans.models import DailyTran
+from .abstract import AbstractApi
+from .utils import date_transfer
 
 urllib3.disable_warnings()
 
 
-def _access_garlic_data_from_api(data):
-    data['PERIOD'] = (f"{data['YEAR']}/{data['MONTH']}/"
-                      f"{(5 if data['PERIOD'] == '上旬' else 15 if data['PERIOD'] == '中旬' else 25)}")
-
-    data.pop('fun')
-    data.pop('YEAR')
-    data.pop('MONTH')
-
-    data['PRODUCTNAME'] = '蒜頭(蒜球)(旬價)'
-
-    return data
-
-
 class Api(AbstractApi):
+    """
+    此 API 專門用來請求蔬菜(Crop)與水果(Fruit)的產地價格資料。
+
+    API 參數特殊的情況只有兩種:
+    1. 蔬菜品項為 "蒜頭(蒜球)(旬價)"
+    2. 水果品項為 "青香蕉下品(內銷)"
+    """
+
     # Settings
     API_NAME = 'apis'
     ZFILL = False
@@ -41,7 +38,7 @@ class Api(AbstractApi):
         super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
                                   logger='aprp', logger_type_code=logger_type_code)
 
-    # hook is stopped using
+    # TODO: to be removed after the API is fixed
     def hook(self, dic):
         for key, value in dic.items():
             if isinstance(value, str):
@@ -68,6 +65,7 @@ class Api(AbstractApi):
                                     extra=self.LOGGER_EXTRA)
             return dic
 
+    # TODO: to be removed after the API is fixed
     def hook2(self, dic):
         for key, value in dic.items():
             if isinstance(value, str):
@@ -94,6 +92,7 @@ class Api(AbstractApi):
                                     extra=self.LOGGER_EXTRA)
             return dic
 
+    # TODO: to be removed after the API is fixed
     def hook3(self, dic):
         for key, value in dic.items():
             if isinstance(value, str):
@@ -137,14 +136,47 @@ class Api(AbstractApi):
                                     extra=self.LOGGER_EXTRA)
             return dic
 
-    def request(self, start_date=None, end_date=None, *args, **kwargs):
-        """
-        For adding parameters in url.
-        """
-        url = self.API_URL
+    @property
+    def sources(self):
+        return self.SOURCE_QS.values_list('name', flat=True)
 
-        # 取得農產品名稱(如果有)
-        name = kwargs.get('name') if kwargs.get('name') else None
+    @property
+    def products(self):
+        return self.PRODUCT_QS.values_list('code', flat=True)
+
+    @staticmethod
+    def _access_garlic_data_from_api(data):
+        """
+        針對 "蒜頭(蒜球)(旬價)" 的 API Response 進行處理，將 "PERIOD" 欄位轉換成日期格式。
+        :param data: dict: API Response for "蒜頭(蒜球)"
+        """
+
+        data['PERIOD'] = (f"{data['YEAR']}/{data['MONTH']}/"
+                          f"{(5 if data['PERIOD'] == '上旬' else 15 if data['PERIOD'] == '中旬' else 25)}")
+
+        data.pop('fun')
+        data.pop('YEAR')
+        data.pop('MONTH')
+
+        data['PRODUCTNAME'] = '蒜頭(蒜球)(旬價)'
+
+        return data
+
+    def _get_formatted_url(
+            self,
+            start_date: datetime.date,
+            end_date: datetime.date,
+            name: str = None
+    ) -> str:
+        """
+        Format the url with filters.
+
+        :param start_date: start date
+        :param end_date: end date
+        :param name: product name
+        """
+
+        url = self.API_URL
 
         # 設定日期範圍
         if start_date:
@@ -152,86 +184,117 @@ class Api(AbstractApi):
                 raise NotImplementedError
 
             url = '&'.join((url, self.START_DATE_FILTER % (start_date.year, start_date.month, start_date.day)))
-
         if end_date:
             if not isinstance(end_date, datetime.date):
                 raise NotImplementedError
 
             url = '&'.join((url, self.END_DATE_FILTER % (end_date.year, end_date.month, end_date.day)))
-        if start_date and end_date:
-            if start_date > end_date:
-                raise AttributeError
+        if start_date and end_date and start_date > end_date:
+            raise AttributeError
 
-        url = '&'.join((url, self.NAME_FILTER % (name if name else '')))
-        urls = [url]
+        return '&'.join((url, self.NAME_FILTER % (name or '')))
+    
+    def _get_urls(self, formatted_url: str, name: str = None):
+        """
+        Get urls for different products.
+
+        :param formatted_url: formatted url that contains filters
+        :param name: product name
+        """
+        
+        urls = [formatted_url]
 
         if name == "青香蕉下品(內銷)":
             urls[0] = urls[0].replace("status=4", "status=6").replace("青香蕉下品", "青香蕉")
         elif self.CONFIG.code == 'COG06' and name is None:
-            urls.append((urls[0] + "青香蕉").replace("status=4", "status=6"))
+            urls.append(formatted_url.replace("status=4", "status=6") + "青香蕉")
 
         if name == "蒜頭(蒜球)(旬價)":
             urls[0] = urls[0].replace("status=4", "status=7").replace("蒜頭(蒜球)(旬價)", "蒜頭(蒜球)")
         elif self.CONFIG.code == 'COG05' and name is None:
-            urls.append(urls[0].replace("status=4", "status=7") + "蒜頭(蒜球)")
+            urls.append(formatted_url.replace("status=4", "status=7") + "蒜頭(蒜球)")
+
+        return urls
+
+    def _handle_response(self, response: Response):
+        """
+        Handle the response from the API.
+        """
+
+        data = response.json()
+        data_set = data.get('DATASET')
+
+        # handle special cases
+        if re.search(r'status=(\d+)', response.url)[1] == '7':
+            # handle "status=7" case
+            data_set = [self._access_garlic_data_from_api(item) for item in data_set]
+
+        elif re.search(r'status=(\d+)', response.url)[1] == '6':
+            # handle "status=6" case
+            data_set = list(
+                map(
+                    lambda x: {**x, 'PRODUCTNAME': x['PRODUCTNAME'][:3] + '下品' + x['PRODUCTNAME'][3:]},
+                    data_set
+                )
+            )
+        return data_set
+
+    def _convert_to_data_frame(self, data: list) -> pd.DataFrame:
+        """
+        Convert the data to a DataFrame.
+
+        :param data: list of data from API
+        """
+
+        # TODO: compare the data with the daily report
+        # data_api_avg = data_api[data_api['ORGNAME'] == '當日平均價']
+
+        return (
+            pd
+            .DataFrame(data)
+            .assign(AVGPRICE=lambda x: x['AVGPRICE'].astype(float))
+            .query('ORGNAME != "當日平均價"')
+            .assign(PRODUCTNAME=lambda x: x['PRODUCTNAME'].str.strip())
+            .assign(ORGNAME=lambda x: x['ORGNAME'].str.strip())
+            .loc[lambda x: x['PRODUCTNAME'].isin(self.products)]
+            .loc[lambda x: x['ORGNAME'].isin(self.sources)]
+        )
+
+    def request(self, start_date=None, end_date=None, *args, **kwargs):
+        """
+        For adding parameters in url.
+        """
+        # 取得農產品名稱
+        name = kwargs.get('name') or None
+        formatted_url = self._get_formatted_url(start_date, end_date, name)
+        urls = self._get_urls(formatted_url, name)
 
         with ThreadPoolExecutor(max_workers=3) as executor:
             results = list(executor.map(self.get, urls))
 
         return results
 
-    def load(self, responses):
+    def load(self, responses: List[Response]):
         """
         Load data from the API response.
 
-        Parameters
-        ----------
-        responses : list
-            list of requests.Response objects.
-
-        Returns
-        -------
-        None
+        :param responses: list of API responses
         """
         data = []
+
         for response in responses:
-            if response.text and '"DATASET":\n' not in response.text:
-                try:
-                    # load data
-                    data_set = json.loads(response.text)
-                    data_set = data_set.get('DATASET')
-                    # handle special cases
-                    if re.search(r'status=(\d+)', response.url).group(1) == '7':
-                        # handle "status=7" case
-                        data_set = [_access_garlic_data_from_api(item) for item in data_set]
-                    elif re.search(r'status=(\d+)', response.url).group(1) == '6':
-                        # handle "status=6" case
-                        data_set = list(
-                            map(lambda x: {**x, 'PRODUCTNAME': x['PRODUCTNAME'][:3] + '下品' + x['PRODUCTNAME'][3:]},
-                                data_set))
-                    data.extend(data_set)
-                except Exception as e:
-                    # log exception
-                    self.LOGGER.exception('%s \n%s' % (response.request.url, e), extra=self.LOGGER_EXTRA)
+            try:
+                data_set = self._handle_response(response)
+
+                data.extend(data_set)
+            except Exception as e:
+                self.LOGGER.exception('%s \n%s' % (response.request.url, e), extra=self.LOGGER_EXTRA)
 
         # data should look like [D, B, {}, C, {}...] after loads
         if not data:
             return
-        # convert data to pandas DataFrame
-        data_api = pd.DataFrame(data)
-        data_api['AVGPRICE'] = data_api['AVGPRICE'].astype(float)
-        data_api_avg = data_api[data_api['ORGNAME'] == '當日平均價']
 
-        data_api = data_api[data_api['ORGNAME'] != '當日平均價']
-
-        # filter data by source and product
-        sources = self.SOURCE_QS.values_list('name', flat=True)
-        products = self.PRODUCT_QS.values_list('code', flat=True)
-
-        data_api['PRODUCTNAME'] = data_api['PRODUCTNAME'].str.strip()
-        data_api['ORGNAME'] = data_api['ORGNAME'].str.strip()
-        data_api = data_api[data_api['PRODUCTNAME'].isin(products)]
-        data_api = data_api[data_api['ORGNAME'].isin(sources)]
+        data_api = self._convert_to_data_frame(data)
 
         try:
             self._access_data_from_api(data_api)

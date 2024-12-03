@@ -1,8 +1,10 @@
 import abc
 import logging
 import time
+
 import requests
 from django.conf import settings
+
 from apps.configs.models import (
     Source,
     Config,
@@ -11,6 +13,11 @@ from apps.configs.models import (
 
 
 class AbstractApi(object):
+    """
+    Abstract class for API classes, which will be inherited by all API classes.
+    And it will be used to define the common methods and attributes for all API classes.
+    """
+
     _metaclass__ = abc.ABCMeta
 
     def __init__(self, model, config_code=None, type_id=None, logger=None, logger_type_code=None):
@@ -39,16 +46,24 @@ class AbstractApi(object):
 
         self.MODEL = model
 
+        # 品項分類: 蔬菜(COG05), 水果(COG06) etc.
         if config_code:
-            self.CONFIG = Config.objects.filter(code=config_code).first()
+            self.CONFIG = Config.objects.get(code=config_code)
+
+            # 得到的來源不分供應階段(批發, 產地 etc.)
             self.SOURCE_QS = Source.objects.filter(configs__exact=self.CONFIG)
             self.PRODUCT_QS = self.MODEL.objects
 
+        # 供應階段: 批發, 產地 etc.
         if type_id:
             self.TYPE = Type.objects.get(id=type_id)
+
+            # 得到的來源不分品項分類(蔬菜(COG05), 水果(COG06) etc.)
             self.SOURCE_QS = self.SOURCE_QS.filter(type__id=type_id)
             self.PRODUCT_QS = self.PRODUCT_QS.filter(type__id=type_id, track_item=True)
-
+            
+        # 將不重複的品項 code 欄位取出來(code 若無對應代碼則可能與品項名稱相同(或是空): 柿子-甜柿(Z4), 柳橙(柳橙) etc.)
+        # 需注意 obj type 為 Tuple
         self.target_items = {obj[0] for obj in self.PRODUCT_QS.values_list('code')}
         self.LOGGER = logging.getLogger(logger)
         self.LOGGER_EXTRA = {
@@ -69,8 +84,14 @@ class AbstractApi(object):
         return
 
     def get(self, url, *args, **kwargs):
+        """
+        通用的 get 方法，當請求失敗時會根據狀況重試
+        """
+
         response = requests.Response()
         retry_count = 0
+
+        # max retry 5 times
         while response.status_code != 200 and retry_count < 5:
             try:
                 response = requests.get(url, *args, **kwargs)
@@ -80,7 +101,12 @@ class AbstractApi(object):
 
             if response.status_code != 200:
                 retry_count += 1
-                self.LOGGER.error('Connection Refused, Retry %s Time' % retry_count, extra=self.LOGGER_EXTRA)
+                self.LOGGER.error(
+                    f'Connection Refused, Retry {retry_count} Time',
+                    extra=self.LOGGER_EXTRA,
+                )
+
+                # sleep 15 seconds before retry
                 time.sleep(15)
                 continue
 

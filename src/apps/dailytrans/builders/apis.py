@@ -145,7 +145,7 @@ class Api(AbstractApi):
         return self.PRODUCT_QS.values_list('code', flat=True)
 
     @staticmethod
-    def _access_garlic_data_from_api(data):
+    def _access_garlic_data_from_api(data: dict):
         """
         針對 "蒜頭(蒜球)(旬價)" 的 API Response 進行處理，將 "PERIOD" 欄位轉換成日期格式。
         :param data: dict: API Response for "蒜頭(蒜球)"
@@ -216,7 +216,7 @@ class Api(AbstractApi):
 
         return urls
 
-    def _handle_response(self, response: Response):
+    def _handle_response(self, response: Response) -> List[dict]:
         """
         Handle the response from the API.
         """
@@ -262,13 +262,18 @@ class Api(AbstractApi):
 
     def request(self, start_date=None, end_date=None, *args, **kwargs):
         """
-        For adding parameters in url.
+        Request data from the API.
+
+        :param start_date: datetime.date: start date
+        :param end_date: datetime.date: end date
         """
-        # 取得農產品名稱
+
+        # 取得品項名稱
         name = kwargs.get('name') or None
         formatted_url = self._get_formatted_url(start_date, end_date, name)
         urls = self._get_urls(formatted_url, name)
 
+        # request data from the API with ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=3) as executor:
             results = list(executor.map(self.get, urls))
 

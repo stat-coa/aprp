@@ -354,14 +354,18 @@ class Api(AbstractApi):
             'PERIOD': 'date',
             'PRODUCTNAME': 'product__code',
         }
+        use_columns = ['id', 'avg_price', 'date', 'product__code', 'source__name']
         data.rename(columns=columns, inplace=True)
         data['date'] = data['date'].apply(lambda x: datetime.datetime.strptime(x, '%Y/%m/%d').date())
 
-        dailytran_qs = DailyTran.objects.filter(date=data['date'].iloc[0],
-                                                product__type=self.TYPE,
-                                                product__config=self.CONFIG)
-        data_db = pd.DataFrame(list(dailytran_qs.values('id', 'avg_price', 'date', 'product__code', 'source__name'))) \
-            if dailytran_qs else pd.DataFrame(columns=['id', 'avg_price', 'date', 'product__code', 'source__name'])
+        dailytran_qs = DailyTran.objects.filter(
+            date=data['date'].iloc[0], product__type=self.TYPE, product__config=self.CONFIG
+        )
+        data_db = (
+            pd.DataFrame(list(dailytran_qs.values(*use_columns)))
+            if dailytran_qs
+            else pd.DataFrame(columns=use_columns)
+        )
 
         return data.merge(data_db, on=['date', 'product__code', 'source__name'], how='outer')
 

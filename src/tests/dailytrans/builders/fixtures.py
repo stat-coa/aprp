@@ -36,6 +36,10 @@ def load_crops_origin_fixtures(load_base_fixtures):
 def load_fruits_origin_fixtures():
     call_command('loaddata', 'configs-abstractproduct-fruits-origin-test.yaml', verbosity=0)
 
+@pytest.fixture
+def load_daily_trans_origin_crops_fixtures():
+    call_command('loaddata', 'dailytrans-crops-origin-test.yaml', verbosity=0)
+
 
 @pytest.fixture
 def crops_wholesale05_api():

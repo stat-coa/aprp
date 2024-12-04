@@ -7,15 +7,19 @@ class RedisCache:
     Redis cache class to handle cache operations using Django cache and Redis
     """
     def __init__(self):
+        self.use_cache = False
         self.cache = base_cache
 
         # get redis connection
         self.redis = get_redis_connection("default")
 
     def get(self, key:str):
-        return self.cache.get(key)
+        return self.cache.get(key) if self.use_cache else None
 
     def set(self, key:str, value, timeout=None):
+        if not self.use_cache:
+            return
+
         self.cache.set(key, value, timeout)
 
     def delete(self, key:str):
@@ -44,6 +48,8 @@ class RedisCache:
         """
         This method will call by `post_save` signal to delete cache keys
         """
+        if not self.use_cache:
+            return
 
         # this is a hack to avoid circular import and this condition only for the model argument that
         # is `AbstractProduct` class

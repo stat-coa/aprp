@@ -196,7 +196,7 @@ def watchlist_base_chart_tab_extra_context(view):
 
         if charts is None:
             charts = config.charts.all()
-            cache.set(cache_key, pickle.dumps(charts))
+            cache.set(cache_key, charts, dump=True)
         else:
             charts = pickle.loads(charts)
 
@@ -213,7 +213,7 @@ def watchlist_base_chart_tab_extra_context(view):
 
             if charts is None:
                 charts = product.config.charts.all()
-                cache.set(cache_key, pickle.dumps(charts))
+                cache.set(cache_key, charts, dump=True)
             else:
                 charts = pickle.loads(charts)
 
@@ -231,7 +231,7 @@ def content_type_with_abstract_product(object_id: str, extra_context: dict, watc
 
     if charts is None:
         charts = product.config.charts.all()
-        cache.set(cache_key, pickle.dumps(charts))
+        cache.set(cache_key, charts, dump=True)
     else:
         charts = pickle.loads(charts)
     extra_context['charts'] = charts

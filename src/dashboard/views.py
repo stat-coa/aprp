@@ -253,7 +253,7 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
             result[i.name] = {'product_id': pid, 'source': source}
 
         # store in cache
-        cache.set(Last5YearsItems.LAST5_YEARS_ITEMS_CACHE_KEY, pickle.dumps(result))
+        cache.set(Last5YearsItems.LAST5_YEARS_ITEMS_CACHE_KEY, result, dump=True)
 
         return result
 

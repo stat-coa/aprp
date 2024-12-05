@@ -1,3 +1,4 @@
+import pickle
 from django.core.cache import cache as base_cache
 from django_redis import get_redis_connection
 
@@ -16,11 +17,11 @@ class RedisCache:
     def get(self, key:str):
         return self.cache.get(key) if self.use_cache else None
 
-    def set(self, key:str, value, timeout=None):
+    def set(self, key:str, value, timeout=None, dump=False):
         if not self.use_cache:
             return
 
-        self.cache.set(key, value, timeout)
+        self.cache.set(key, pickle.dumps(value), timeout) if dump else self.cache.set(key, value, timeout)
 
     def delete(self, key:str):
         self.cache.delete(key)

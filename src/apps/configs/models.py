@@ -68,11 +68,11 @@ class AbstractProduct(Model):
             if watchlist and not watchlist.watch_all:
                 products = products.filter(id__in=watchlist.related_product_ids)
 
-            cache.set(cache_key, pickle.dumps(products.order_by('id')))
+            cache.set(cache_key, products.order_by('id'), dump=True)
         else:
             products = pickle.loads(products)
 
-        return products
+        return products.order_by('id')
 
     def children_all(self):
         cache_key = CHILDREN_ALL_CACHE_KEY.format(product_id=self.id)
@@ -88,7 +88,7 @@ class AbstractProduct(Model):
             | Q(parent__parent__parent__parent__parent=self)
         ).select_subclasses().order_by('id')
 
-            cache.set(cache_key, pickle.dumps(products))
+            cache.set(cache_key, products, dump=True)
         else:
             products = pickle.loads(products)
 
@@ -107,7 +107,7 @@ class AbstractProduct(Model):
 
                 type_ids = products.values_list('type__id', flat=True)
                 types = Type.objects.filter(id__in=type_ids)
-                cache.set(cache_key, pickle.dumps(types))
+                cache.set(cache_key, types, dump=True)
             else:
                 types = pickle.loads(types)
 
@@ -118,7 +118,7 @@ class AbstractProduct(Model):
 
             if _type is None:
                 _type = Type.objects.filter(id=self.type.id)
-                cache.set(cache_key, pickle.dumps(_type))
+                cache.set(cache_key, _type, dump=True)
             else:
                 _type = pickle.loads(_type)
 
@@ -206,7 +206,7 @@ class Config(Model):
         if products is None:
             # Use select_subclasses() to return subclass instance
             products = AbstractProduct.objects.filter(config=self).select_subclasses().order_by('id')
-            cache.set(cache_key, pickle.dumps(products))
+            cache.set(cache_key, products, dump=True)
         else:
             products = pickle.loads(products)
 
@@ -230,11 +230,11 @@ class Config(Model):
             if watchlist and not watchlist.watch_all:
                 products = products.filter(id__in=watchlist.related_product_ids)
 
-            cache.set(cache_key, pickle.dumps(products.order_by('id')))
+            cache.set(cache_key, products.order_by('id'), dump=True)
         else:
             products = pickle.loads(products)
 
-        return products
+        return products.order_by('id')
 
     def types(self):
         products_qs = self.products().values('type').distinct()
@@ -312,7 +312,7 @@ class TypeQuerySet(QuerySet):
 
         if types is None:
             types = self.filter(id__in=ids)
-            cache.set(cache_key, pickle.dumps(types))
+            cache.set(cache_key, types, dump=True)
         else:
             types = pickle.loads(types)
 

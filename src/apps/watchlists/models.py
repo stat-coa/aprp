@@ -92,7 +92,7 @@ class Watchlist(Model):
 
         if items is None:
             items = WatchlistItem.objects.filter(parent=self)
-            cache.set(cache_key, pickle.dumps(items))
+            cache.set(cache_key, items, dump=True)
         else:
             items = pickle.loads(items)
 
@@ -104,7 +104,7 @@ class Watchlist(Model):
         if configs is None:
             ids = self.children().values_list('product__config__id', flat=True).distinct()
             configs = Config.objects.filter(id__in=ids).order_by('id')
-            cache.set(RELATED_CONFIGS_CACHE_KEY.format(watchlist_id=self.id), pickle.dumps(configs))
+            cache.set(RELATED_CONFIGS_CACHE_KEY.format(watchlist_id=self.id), configs, dump=True)
         else:
             configs = pickle.loads(configs)
 
@@ -136,7 +136,7 @@ class WatchlistItemQuerySet(QuerySet):
                     | Q(product__parent__parent__parent=product)
                     | Q(product__parent__parent__parent__parent=product)
                 )
-                cache.set(cache_key, pickle.dumps(products))
+                cache.set(cache_key, products, dump=True)
             else:
                 products = pickle.loads(products)
 

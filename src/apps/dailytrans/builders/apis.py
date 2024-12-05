@@ -5,6 +5,7 @@ from typing import List
 
 import pandas as pd
 import urllib3
+from pandas import Series
 from requests import Response
 
 from apps.dailytrans.models import DailyTran
@@ -304,7 +305,7 @@ class Api(AbstractApi):
         try:
             self._access_data_from_api(data_api)
         except Exception as e:
-            self.LOGGER.exception(f'exception: {e}, response: {responses[0].text}', extra=self.LOGGER_EXTRA)
+            self.LOGGER.exception(f'exception: {e}, data_api: {data_api}', extra=self.LOGGER_EXTRA)
 
     def _access_data_from_api(self, data: pd.DataFrame):
         """
@@ -317,25 +318,28 @@ class Api(AbstractApi):
         # due to merge two data with date, product id and source id, there are two average prices data that are from
         # Api and DB respectively, we can compare these two and decide whether we should update or delete.
         condition = (data_merge['avg_price_x'] != data_merge['avg_price_y'])
+
         if not data_merge[condition].empty:
             for _, value in data_merge[condition].fillna('').iterrows():
+                series: Series = value
+
                 try:
                     # get the existed DailyTran record
-                    existed_tran = DailyTran.objects.get(id=int(value['id'] or 0))
+                    existed_tran = DailyTran.objects.get(id=int(series['id'] or 0))
 
-                    if value['avg_price_x']:
+                    if series['avg_price_x']:
                         # if the avg_price in API is not None, update the existed record
-                        self._update_data(value, existed_tran)
+                        self._update_data(series, existed_tran)
                     else:
                         # if the avg_price in API is None, delete the existed record
                         existed_tran.delete()
-                        self.LOGGER.warning(msg=f"The DailyTran data of the product: {value['product__code']} "
-                                                f"on {value['date'].strftime('%Y-%m-%d')} "
-                                                f"from source: {value['source__name']} with\n"
-                                                f"avg_price: {value['avg_price_y']}\n has been deleted.")
+                        self.LOGGER.warning(msg=f"The DailyTran data of the product: {series['product__code']} "
+                                                f"on {series['date'].strftime('%Y-%m-%d')} "
+                                                f"from source: {series['source__name']} with\n"
+                                                f"avg_price: {series['avg_price_y']}\n has been deleted.")
                 except Exception as e:
                     # if no existed record is found, save the data as a new record
-                    self._save_new_data(value)
+                    self._save_new_data(series)
 
     def _compare_data_from_api_and_db(self, data: pd.DataFrame) -> pd.DataFrame:
         """
@@ -348,63 +352,65 @@ class Api(AbstractApi):
         :param data: DataFrame: data from API
         :return: DataFrame: merged DataFrame
         """
+
         columns = {
             'AVGPRICE': 'avg_price',
             'ORGNAME': 'source__name',
             'PERIOD': 'date',
             'PRODUCTNAME': 'product__code',
         }
-        use_columns = ['id', 'avg_price', 'date', 'product__code', 'source__name']
+        merged_by_columns = ['date', 'product__code', 'source__name']
+        use_columns = ['id', 'avg_price'] + merged_by_columns
         data.rename(columns=columns, inplace=True)
         data['date'] = data['date'].apply(lambda x: datetime.datetime.strptime(x, '%Y/%m/%d').date())
 
-        dailytran_qs = DailyTran.objects.filter(
+        daily_tran_qs = DailyTran.objects.filter(
             date=data['date'].iloc[0], product__type=self.TYPE, product__config=self.CONFIG
         )
         data_db = (
-            pd.DataFrame(list(dailytran_qs.values(*use_columns)))
-            if dailytran_qs
+            pd.DataFrame(list(daily_tran_qs.values(*use_columns)))
+            if daily_tran_qs
             else pd.DataFrame(columns=use_columns)
         )
 
-        return data.merge(data_db, on=['date', 'product__code', 'source__name'], how='outer')
+        return data.merge(data_db, on=merged_by_columns, how='outer')
 
-    def _update_data(self, value, existed_tran):
+    def _update_data(self, series: Series, existed_tran: DailyTran):
         """
         Update the data in DB with the data from API.
 
-        :param value: dict: data from API
-        :param existed_tran: DailyTran: the existed record in DB
+        :param series: data from API that convert to Pandas `Series`
+        :param existed_tran: the existed record in DB
         """
+
         # update the existed record with the new data
         # the avg_price_x is the value from API, it's newer than the value in DB
-        existed_tran.avg_price = value['avg_price_x']
+        existed_tran.avg_price = series['avg_price_x']
+
         existed_tran.save()
         self.LOGGER.info(
-            msg=f"The data of the product: {value['product__code']} on"
-                f" {value['date'].strftime('%Y-%m-%d')} has been updated.")
+            msg=f"The data of the product: {series['product__code']} on"
+                f" {series['date'].strftime('%Y-%m-%d')} has been updated.")
 
-    def _save_new_data(self, value):
+    def _save_new_data(self, series: Series):
         """
         Save the data in DB.
 
-        :param value: dict: data from API
+        :param series: data from API that convert to Pandas `Series`
         """
         # get the products from DB
-        products = self.MODEL.objects.filter(code=value['product__code'])
-        # get the source from DB
-        source = self.SOURCE_QS.get(name=value['source__name'])
-        # create a list of new records
-        new_trans = [DailyTran(
-            # set the product
-            product=product,
-            # set the source
-            source=source,
-            # set the average price
-            avg_price=value['avg_price_x'],
-            # set the date
-            date=value['date']
-        ) for product in products]
-        # bulk create the new records
-        DailyTran.objects.bulk_create(new_trans)
+        products = self.MODEL.objects.filter(code=series['product__code'])
 
+        # get the source from DB
+        source = self.SOURCE_QS.get(name=series['source__name'])
+
+        # create a list of new records
+        new_trans_list = [DailyTran(
+            product=product,
+            source=source,
+            avg_price=series['avg_price_x'],
+            date=series['date']
+        ) for product in products]
+
+        # bulk create the new records
+        DailyTran.objects.bulk_create(new_trans_list)

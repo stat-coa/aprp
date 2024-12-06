@@ -6,6 +6,7 @@ from urllib.parse import urlparse, parse_qs
 import pandas as pd
 import pytest
 from pandas import Series
+from requests import Response, Request
 
 from apps.configs.models import Config, Source, AbstractProduct, Type
 from apps.crops.models import Crop
@@ -13,6 +14,7 @@ from apps.dailytrans.builders.apis import Api as OriginApi
 from apps.dailytrans.builders.utils import DirectData
 from apps.dailytrans.models import DailyTran
 from apps.fruits.models import Fruit
+from apps.logs.models import Log, LogType
 
 
 @pytest.fixture
@@ -478,7 +480,9 @@ class TestOriginApis:
             mock_response,
             crops_origin_api,
             mock_crops_origin_api: OriginApi,
+            mock_fruits_origin_api
     ):
+        # Case1: crops
         # Arrange
         data_list = self.get_data_set(mock_response, mock_crops_origin_api, crops_origin_api, 'all_crops')
         df = mock_crops_origin_api._convert_to_data_frame(data_list)
@@ -489,3 +493,116 @@ class TestOriginApis:
 
         # Assert
         assert qs.count() == len(df)
+
+        # Case2: fruits
+        # Arrange
+        DailyTran.objects.all().delete()
+        data_list = self.get_data_set(mock_response, mock_fruits_origin_api, crops_origin_api, 'all_fruits')
+        df = mock_fruits_origin_api._convert_to_data_frame(data_list)
+
+        # Act
+        mock_fruits_origin_api._access_data_from_api(df)
+        qs = DailyTran.objects.all()
+
+        # Assert
+        assert qs.count() == len(df)
+
+
+    @patch('apps.dailytrans.builders.apis.Api._access_data_from_api')
+    @patch('apps.dailytrans.builders.apis.Api._convert_to_data_frame')
+    @patch('apps.dailytrans.builders.apis.Api._handle_response')
+    @patch('requests.Response')
+    def test_load(
+            self,
+            mock_response,
+            mock_handle_response,
+            mock_convert_to_data_frame,
+            mock_access_data_from_api,
+            mock_crops_origin_api: OriginApi,
+            mock_fruits_origin_api: OriginApi,
+    ):
+        # Arrange
+        data = DirectData('COG06', 2, 'LOT-fruits')
+        api = OriginApi(model=Fruit, **data._asdict())
+        handle_response_return_value = [{'data': 'mock_data'}]
+        mock_handle_response.return_value = handle_response_return_value
+        convert_to_data_frame_return_value = pd.DataFrame({'data': ['mock_data']})
+        mock_convert_to_data_frame.return_value = convert_to_data_frame_return_value
+
+        # Act
+        api.load([mock_response])
+
+        # Assert
+        mock_handle_response.assert_called_once_with(mock_response)
+        mock_convert_to_data_frame.assert_called_once_with(handle_response_return_value)
+        mock_access_data_from_api.assert_called_once_with(convert_to_data_frame_return_value)
+
+    @patch('apps.dailytrans.builders.apis.Api._access_data_from_api')
+    @patch('apps.dailytrans.builders.apis.Api._convert_to_data_frame')
+    @patch('apps.dailytrans.builders.apis.Api._handle_response')
+    @patch('requests.Request', spec=Request)
+    @patch('requests.Response', spec=Response)
+    def test_load_with_response_error(
+            self,
+            mock_response,
+            mock_request,
+            mock_handle_response,
+            mock_convert_to_data_frame,
+            mock_access_data_from_api,
+            mock_crops_origin_api: OriginApi,
+            mock_fruits_origin_api: OriginApi,
+    ):
+        # Arrange
+        data = DirectData('COG06', 2, 'LOT-fruits')
+        api = OriginApi(model=Fruit, **data._asdict())
+        exc = Exception('mock error')
+        mock_handle_response.side_effect = exc
+        convert_to_data_frame_return_value = pd.DataFrame({'data': ['mock_data']})
+        mock_convert_to_data_frame.return_value = convert_to_data_frame_return_value
+        mock_request.url = 'http://mock.url'
+        mock_response.request = mock_request
+
+        # Act
+        api.load([mock_response])
+        log = Log.objects.all().first()
+
+        # Assert
+        mock_handle_response.assert_called_once_with(mock_response)
+        mock_convert_to_data_frame.assert_not_called()
+        mock_access_data_from_api.assert_not_called()
+        assert log is not None
+        assert log.msg == f'{mock_request.url} \n{exc}'
+
+    @patch('apps.dailytrans.builders.apis.Api._access_data_from_api')
+    @patch('apps.dailytrans.builders.apis.Api._convert_to_data_frame')
+    @patch('apps.dailytrans.builders.apis.Api._handle_response')
+    @patch('requests.Response')
+    def test_load_with_data_error(
+            self,
+            mock_response,
+            mock_handle_response,
+            mock_convert_to_data_frame,
+            mock_access_data_from_api,
+            mock_crops_origin_api: OriginApi,
+            mock_fruits_origin_api: OriginApi,
+    ):
+        # Arrange
+        data = DirectData('COG06', 2, 'LOT-fruits')
+        api = OriginApi(model=Fruit, **data._asdict())
+        handle_response_return_value = [{'data': 'mock_data'}]
+        mock_handle_response.return_value = handle_response_return_value
+        convert_to_data_frame_return_value = pd.DataFrame({'data': ['mock_data']})
+        mock_convert_to_data_frame.return_value = convert_to_data_frame_return_value
+        exc = Exception('mock error')
+        mock_access_data_from_api.side_effect = exc
+
+        # Act
+        api.load([mock_response])
+        log = Log.objects.all().first()
+
+        # Assert
+        mock_handle_response.assert_called_once_with(mock_response)
+        mock_convert_to_data_frame.assert_called_once_with(handle_response_return_value)
+        mock_access_data_from_api.assert_called_once_with(convert_to_data_frame_return_value)
+        assert log is not None
+        assert log.msg == f'exception: {exc}, data_api: {convert_to_data_frame_return_value}'

@@ -54,12 +54,19 @@ class AbstractProduct(Model):
     def __unicode__(self):
         return str(self.name)
 
-    def children(self, watchlist=None):
-        if watchlist:
-            cache_key = CHILDREN_CACHE_KEY.format(watchlist_id=watchlist.id, product_id=self.id)
-        else:
-            cache_key = f"product{self.id}_children"
+    def get_cache_key(self, watchlist=None):
+        return (
+            CHILDREN_CACHE_KEY.format(watchlist_id=watchlist.id, product_id=self.id)
+            if watchlist
+            else f"product{self.id}_children"
+        )
 
+    def children(self, watchlist=None):
+        """
+        取得某個品項底下的第一層所有子品項(parent=self)
+        """
+
+        cache_key = self.get_cache_key(watchlist)
         products = cache.get(cache_key)
 
         if products is None:
@@ -75,11 +82,15 @@ class AbstractProduct(Model):
         return products.order_by('id')
 
     def children_all(self):
-        cache_key = CHILDREN_ALL_CACHE_KEY.format(product_id=self.id)
+        """
+        取得某個品項底下所有層別的所有子品項
+        """
 
+        cache_key = CHILDREN_ALL_CACHE_KEY.format(product_id=self.id)
         products = cache.get(cache_key)
 
         if products is None:
+            # 簡而言之，過濾出 X 品項，或是向上找出 parent 為 X 品項的子品項
             products = AbstractProduct.objects.filter(
             Q(parent=self)
             | Q(parent__parent=self)
@@ -107,6 +118,7 @@ class AbstractProduct(Model):
 
                 type_ids = products.values_list('type__id', flat=True)
                 types = Type.objects.filter(id__in=type_ids)
+
                 cache.set(cache_key, types, dump=True)
             else:
                 types = pickle.loads(types)
@@ -127,6 +139,12 @@ class AbstractProduct(Model):
             return self.objects.none()
 
     def sources(self, watchlist=None):
+        """
+        得到某個品項的所有來源或是監控品項的來源
+
+        :param watchlist: Watchlist: 監控清單
+        """
+
         if watchlist:
             return watchlist.children().filter(product__id=self.id).first().sources.all()
         else:
@@ -167,13 +185,24 @@ class AbstractProduct(Model):
 
     @property
     def related_product_ids(self):
+        """
+        找出指定品項的所有階層(parents and children) ID。
+
+        e.g.:
+        children: 落花生(帶殼) -> None
+        parents:  落花生(帶殼) -> 落花生 -> 花果菜類
+        ids = [落花生(帶殼).id, 落花生.id, 花果菜類.id]
+        """
+
         ids = list(self.children().values_list('id', flat=True))
 
         lock = False
         product = self
 
         while not lock:
+            # add self id
             ids.append(product.id)
+
             if product.parent is not None:
                 product = product.parent
             else:
@@ -199,6 +228,13 @@ class Config(Model):
     def __unicode__(self):
         return str(self.name)
 
+    def get_cache_key(self, watchlist=None):
+        return (
+            FIRST_LEVEL_PRODUCTS_WITH_WATCHLIST_CACHE_KEY.format(watchlist_id=watchlist.id, config_id=self.id)
+            if watchlist
+            else FIRST_LEVEL_PRODUCTS_CACHE_KEY.format(config_id=self.id)
+        )
+
     def products(self):
         cache_key = PRODUCTS_CACHE_KEY.format(config_id=self.id)
         products = cache.get(cache_key)
@@ -213,14 +249,18 @@ class Config(Model):
         return products
 
     def first_level_products(self, watchlist=None):
-        # using redis to reduce database handling and using pickle to serialize the data
-        if watchlist:
-            cache_key = FIRST_LEVEL_PRODUCTS_WITH_WATCHLIST_CACHE_KEY.format(
-                watchlist_id=watchlist.id, config_id=self.id
-            )
-        else:
-            cache_key = FIRST_LEVEL_PRODUCTS_CACHE_KEY.format(config_id=self.id)
+        """
+        此 method 主要用於取得左側選單取得第一層品項，幾乎為固定品項:
+        合計項目: 蔬菜-批發合計、水果-批發合計、花卉-批發合計、毛豬合計
+        農產品: 糧價、蔬菜、水果、花卉
+        畜禽產品: 毛豬、羊、雞、鴨、牛
+        漁產品: 養殖類、蝦類、貝類
 
+        主要由 `dashboard.views.Index` 與 `apps.dashboard.views.JarvisMenu` 間接呼叫
+        """
+
+        # using redis to reduce database handling and using pickle to serialize the data
+        cache_key = self.get_cache_key(watchlist)
         products = cache.get(cache_key)
 
         if products is None:

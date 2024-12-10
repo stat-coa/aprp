@@ -89,29 +89,31 @@ class Index(LoginRequiredMixin, TemplateView):
         context['watchlists'] = watchlists
 
         # filter watchlist item or use default
-        # watchlist_id = kwargs.get('wi') or self.request.COOKIES.get('aprp_userwatchlistid')
         watchlist_id = kwargs.get('wi')
-        watchlist = Watchlist.objects.filter(id=watchlist_id).first()
-        if not watchlist:
-            watchlist = Watchlist.objects.get(is_default=True)
+        watchlist = Watchlist.objects.filter(id=watchlist_id).first() or Watchlist.objects.get(is_default=True)
         context['user_watchlist'] = watchlist
 
         # classify config into different folder manually
         configs = watchlist.related_configs()
-        context['totals'] = configs.filter(id__in=[2, 3, 4])  # render configs
-        context['agricultures'] = configs.filter(id__in=[1, 5, 6, 7])  # render configs
-        context['livestocks'] = configs.filter(id__in=[8, 9, 10, 11, 12, 14])  # render configs
-        if configs.filter(id=13).first():  # render products, config as folder
+
+        # render config as folder on left panel menu(1st level)
+        # 合計項目
+        context['totals'] = configs.filter(id__in=[2, 3, 4])
+
+        # 農產品
+        context['agricultures'] = configs.filter(id__in=[1, 5, 6, 7])
+
+        # 畜禽產品
+        context['livestocks'] = configs.filter(id__in=[8, 9, 10, 11, 12, 14])
+
+        # 漁產品
+        if configs.filter(id=13).first():
             context['fisheries'] = configs.get(id=13).first_level_products(watchlist=watchlist)
 
         return context
 
     def render_to_response(self, context, **response_kwargs):
-        response = super(Index, self).render_to_response(context, **response_kwargs)
-        # set cookie
-        # watchlist = context['user_watchlist']
-        # response.set_cookie('aprp_userwatchlistid', watchlist.id)
-        return response
+        return super(Index, self).render_to_response(context, **response_kwargs)
 
 
 class About(LoginRequiredMixin, TemplateView):

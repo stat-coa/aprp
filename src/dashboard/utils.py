@@ -49,27 +49,27 @@ def jarvismenu_extra_context(view):
     """
     kwargs = view.kwargs
     user = view.request.user
-
     extra_context = dict()
-
     watchlist_id = kwargs.get('wi')
     content_type = kwargs.get('ct')
     object_id = kwargs.get('oi')
     last_content_type = kwargs.get('lct')
     last_object_id = kwargs.get('loi')
-
     watchlist = Watchlist.objects.get(id=watchlist_id)
     extra_context['watchlist'] = watchlist
 
+    # 品項第一層(品項分類(Config))
     if content_type == 'config':
         config = Config.objects.get(id=object_id)
         products = config.first_level_products(watchlist=watchlist)
+
         if products:
             extra_context['items'] = products
             extra_context['ct'] = 'abstractproduct'
             extra_context['lct'] = 'config'
             extra_context['loi'] = object_id
 
+    # TODO: 目前看起來這個條件不會進入
     elif content_type == 'type':
         if last_content_type == 'abstractproduct':
             product = AbstractProduct.objects.get(id=last_object_id)
@@ -87,17 +87,21 @@ def jarvismenu_extra_context(view):
                 extra_context['lct'] = 'abstractproduct'
                 extra_context['loi'] = product.id
 
+    # 品項第二層以後
     elif content_type == 'abstractproduct':
         product = AbstractProduct.objects.get(id=object_id)
         extra_context['lct'] = 'abstractproduct'
         extra_context['loi'] = product.id
+        children_has_monitor_profile = MonitorProfile.objects.filter(
+            watchlist=watchlist,
+            product__id__in=product.children_all().values_list('id', flat=True)
+        )
 
-        children_has_monitor_profile = MonitorProfile.objects.filter(watchlist=watchlist,
-                                                                     product__id__in=product.children_all().values_list('id', flat=True))
-
+        # TODO: 目前看起來這個條件不會進入
         if product.level >= product.config.type_level and not user.info.menu_viewer and not children_has_monitor_profile:
             pass
 
+        # TODO: 目前看起來這個條件不會進入
         elif product.types(watchlist=watchlist).count() > 1 and product.level == product.config.type_level:
             extra_context['items'] = product.types(watchlist=watchlist)
             extra_context['ct'] = 'type'
@@ -106,6 +110,7 @@ def jarvismenu_extra_context(view):
             extra_context['items'] = product.children(watchlist=watchlist)
             extra_context['ct'] = 'abstractproduct'
 
+        # 最下層品項，再展開則為該品項的來源清單
         elif product.has_source:
             extra_context['items'] = product.sources(watchlist=watchlist)
             extra_context['ct'] = 'source'

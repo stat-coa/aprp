@@ -571,7 +571,7 @@ class TestOriginApis:
         mock_convert_to_data_frame.assert_not_called()
         mock_access_data_from_api.assert_not_called()
         assert log is not None
-        assert log.msg == f'{mock_request.url} \n{exc}'
+        assert log.level == 30
 
     @patch('apps.dailytrans.builders.apis.Api._access_data_from_api')
     @patch('apps.dailytrans.builders.apis.Api._convert_to_data_frame')

@@ -294,7 +294,13 @@ class Api(AbstractApi):
 
                 data.extend(data_set)
             except Exception as e:
-                self.LOGGER.exception('%s \n%s' % (response.request.url, e), extra=self.LOGGER_EXTRA)
+                if len(response.text) == 0:
+                    self.LOGGER.warning(f'no data returned\nurl={response.request.url}', extra=self.LOGGER_EXTRA)
+                else:
+                    self.LOGGER.exception(
+                        f'resp={response.text}\nurl={response.request.url}\nexc={e}',
+                        extra=self.LOGGER_EXTRA
+                    )
 
         # data should look like [D, B, {}, C, {}...] after loads
         if not data:

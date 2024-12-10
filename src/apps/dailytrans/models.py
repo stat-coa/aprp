@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.utils import timezone
 import datetime
 from dateutil import rrule
@@ -20,27 +22,43 @@ class DailyTranQuerySet(QuerySet):
         kwargs['update_time'] = timezone.now()
         super(DailyTranQuerySet, self).update(*args, **kwargs)
 
-    def between_month_day_filter(self, start_date=None, end_date=None):
+    def between_month_day_filter(
+            self,
+            start_date: Optional[datetime.date]=None,
+            end_date: Optional[datetime.date]=None
+    ):
+        """
+        Filters a queryset based on a range of dates defined by the start and end dates provided.
+        If either date is not specified, the original queryset is returned without filtering.
+
+        Args:
+            start_date: The start date for the filtering range.
+            end_date : The end date for the filtering range.
+
+        Returns:
+            self: The filtered queryset based on the specified date range.
+        """
+
         if not start_date or not end_date:
             return self
-        elif start_date and end_date:
-            date_ranges=[]
-            start_year = start_date.year
-            end_year = end_date.year
-            for i in range(start_year-2011+1):
-                start_date = datetime.date(start_year-i, start_date.month+1, 1) \
-                    if (is_leap(start_year-i) and start_date.month==2 and start_date.day==29) \
-                    else datetime.date(start_year-i, start_date.month, start_date.day)
-                end_date = datetime.date(end_year-i, end_date.month, end_date.day-1) \
-                    if (is_leap(end_year-i) and end_date.month==2 and end_date.day==29) \
-                    else datetime.date(end_year-i, end_date.month, end_date.day)
-                date_range = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                date_ranges.extend(date_range)
-            return self.filter(date__in=date_ranges)
-        elif start_date:
-            return self.filter(date__month__gte=start_date.month, date__day__gte=start_date.day)
-        else:
-            return self.filter(date__month__lte=end_date.month, date__day__lte=end_date.day)
+
+        date_ranges = []
+        start_year = start_date.year
+        end_year = end_date.year
+
+        for i in range(start_year - 2011 + 1):
+            start_date = datetime.date(start_year - i, start_date.month + 1, 1) \
+                    if (is_leap(start_year - i) and start_date.month == 2 and start_date.day == 29) \
+                    else datetime.date(start_year - i, start_date.month, start_date.day)
+
+            end_date = datetime.date(end_year - i, end_date.month, end_date.day - 1) \
+                    if (is_leap(end_year - i) and end_date.month == 2 and end_date.day == 29) \
+                    else datetime.date(end_year - i, end_date.month, end_date.day)
+
+            date_range = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+            date_ranges.extend(date_range)
+
+        return self.filter(date__in=date_ranges)
 
 
 class DailyTran(Model):

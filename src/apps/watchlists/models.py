@@ -1,4 +1,5 @@
 import pickle
+from typing import List, Union
 
 from django.conf import settings
 from django.db.models import (
@@ -86,8 +87,11 @@ class Watchlist(Model):
         return str(self.name)
 
     def children(self):
-        cache_key = CHILDREN_CACHE_KEY.format(watchlist_id=self.id)
+        """
+        得到該監控清單底下的所有監控品項(WatchListItems)
+        """
 
+        cache_key = CHILDREN_CACHE_KEY.format(watchlist_id=self.id)
         items = cache.get(cache_key)
 
         if items is None:
@@ -99,11 +103,16 @@ class Watchlist(Model):
         return items
 
     def related_configs(self):
+        """
+        得到特定監控清單的所有品項分類(Config)
+        """
+
         configs = cache.get(RELATED_CONFIGS_CACHE_KEY.format(watchlist_id=self.id))
 
         if configs is None:
             ids = self.children().values_list('product__config__id', flat=True).distinct()
             configs = Config.objects.filter(id__in=ids).order_by('id')
+
             cache.set(RELATED_CONFIGS_CACHE_KEY.format(watchlist_id=self.id), configs, dump=True)
         else:
             configs = pickle.loads(configs)
@@ -112,45 +121,60 @@ class Watchlist(Model):
 
     @property
     def related_product_ids(self):
+        """
+        得到所有監控品項(WatchlistItems)的所有階層(children & parents)品項(AbstractProducts) ID
+        """
+
         ids = []
+
         for child in self.children():
-            ids = ids + list(child.product.related_product_ids)
+            item: WatchlistItem = child
+            ids = ids + list(item.product.related_product_ids)
+
         return ids
 
 
 class WatchlistItemQuerySet(QuerySet):
-    """ for case like WatchlistItem.objects.filter(parent=self).filter_by_product(product__id=1) """
     def filter_by_product(self, **kwargs):
-        product = kwargs.get('product') or AbstractProduct.objects.filter(id=kwargs.get('product__id')).first()
+        """
+        for case like WatchlistItem.objects.filter(parent=self).filter_by_product(product__id=1)
+        """
+
+        product: Union[AbstractProduct, None] = (
+                kwargs.get('product')
+                or AbstractProduct.objects.filter(id=kwargs.get('product__id')).first()
+        )
 
         if product:
             cache_key = FILTER_BY_PRODUCT_CACHE_KEY.format(product_id=product.id)
+            items = cache.get(cache_key)
 
-            products = cache.get(cache_key)
-
-            if products is None:
-                products = self.filter(
+            if items is None:
+                # 簡而言之，過濾出 X 品項，或是向上找出 parent 為 X 品項的子品項
+                items = self.filter(
                     Q(product=product)
                     | Q(product__parent=product)
                     | Q(product__parent__parent=product)
                     | Q(product__parent__parent__parent=product)
                     | Q(product__parent__parent__parent__parent=product)
                 )
-                cache.set(cache_key, products, dump=True)
-            else:
-                products = pickle.loads(products)
 
-            return products
+                cache.set(cache_key, items, dump=True)
+            else:
+                items = pickle.loads(items)
+
+            return items
 
         return self.none()
 
-    """
-    for case like QuerySet.get_unit()
-    if QuerySet products has multiple types, search for parent unit by config.type_level
-    if single type, return first product unit
-    limit: same type of products(in single product chain) only support same unit
-    """
     def get_unit(self):
+        """
+        for case like QuerySet.get_unit()
+        if QuerySet products has multiple types, search for parent unit by config.type_level
+        if single type, return first product unit
+        limit: same type of products(in single product chain) only support same unit
+        """
+
         config = self.first().product.config
         if self.values('product__type').count() <= 0:
             return self.first().unit
@@ -215,19 +239,28 @@ class MonitorProfile(Model):
     def watchlist_items(self):
         return WatchlistItem.objects.filter(product__parent=self.product)
 
-    def product_list(self):
+    def product_list(self) -> List[AbstractProduct]:
+        """
+        此 method 只會由 `apps.dailytrans.dailyreport.py` 使用，用於產製日報表的品項
+        """
+        
         items = WatchlistItem.objects.filter_by_product(product=self.product).filter(parent=self.watchlist)
         # items = self.watchlist_items().filter(parent=self.watchlist)
-        if not items:
-            return [self.product]
-        else:
-            return [item.product for item in items]
+
+        return [item.product for item in items] if items else [self.product]
 
     def sources(self):
-        sources = list()
+        """
+        此 method 只會由 `apps.dailytrans.dailyreport.py` 使用，用於產製日報表時，取得品項的來源
+        """
+
+        sources = []
         items = WatchlistItem.objects.filter_by_product(product=self.product).filter(parent=self.watchlist)
+
         for i in items:
-            sources += i.sources.all()
+            item: WatchlistItem = i
+            sources += item.sources.all()
+
         return list(set(sources))
 
     def active_compare(self, price):

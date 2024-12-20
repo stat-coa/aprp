@@ -1,18 +1,20 @@
-import datetime
 import calendar
+import datetime
+from pathlib import Path
+from typing import List, Optional
+
 import openpyxl
 import pandas as pd
-
-from openpyxl.styles import PatternFill, Font
-from pathlib import Path
 from django.conf import settings
+from django.db.models import QuerySet
+from openpyxl.styles import PatternFill, Font
 
-from apps.watchlists.models import Watchlist, WatchlistItem, MonitorProfile
+from apps.configs.models import Source
 from apps.dailytrans.models import DailyTran
 from apps.dailytrans.utils import get_group_by_date_query_set
-from apps.fruits.models import Fruit
-from apps.configs.models import Source
 from apps.flowers.models import Flower
+from apps.fruits.models import Fruit
+from apps.watchlists.models import Watchlist, WatchlistItem, MonitorProfile
 
 TEMPLATE = str(settings.BASE_DIR('apps/dailytrans/reports/template.xlsx'))
 
@@ -99,12 +101,12 @@ def get_avg_price(qs, has_volume, has_weight):
         return qs['avg_price'].mean()
 
 
-def get_avg_volume(qs):
-    return qs['sum_volume'].mean() if not pd.isna(qs['sum_volume'].mean()) else 0
+def get_avg_volume(df: pd.DataFrame):
+    return 0 if pd.isna(df['sum_volume'].mean()) else df['sum_volume'].mean()
 
 
 class DailyReportFactory(object):
-    def __init__(self, specify_day):
+    def __init__(self, specify_day: datetime.datetime):
         self.specify_day = specify_day
         self.this_week_start = self.specify_day - datetime.timedelta(6)
         self.this_week_end = self.specify_day
@@ -116,7 +118,8 @@ class DailyReportFactory(object):
                                                      calendar.monthrange(self.specify_day.year - 1,
                                                                          self.specify_day.month)[1])
 
-        self.row_visible = []
+        # 紀錄要顯示的 Excel row number，不在此列表內的 row number 會被隱藏
+        self.row_visible: List[int] = []
         self.row_marked = []
         self.result = {}
         self.col_dict = {}
@@ -124,6 +127,24 @@ class DailyReportFactory(object):
         self.item_desc = []
 
     def generate_list_dict(self):
+        """
+        The dict will like this:
+        {'2024-12-11': 'M',
+         '2024-12-11_volume': 'X',
+         '2024-12-12': 'N',
+         '2024-12-12_volume': 'Y',
+         '2024-12-13': 'O',
+         '2024-12-13_volume': 'Z',
+         '2024-12-14': 'P',
+         '2024-12-14_volume': 'AA',
+         '2024-12-15': 'Q',
+         '2024-12-15_volume': 'AB',
+         '2024-12-16': 'R',
+         '2024-12-16_volume': 'AC',
+         '2024-12-17': 'S',
+         '2024-12-17_volume': 'AD'}
+        """
+
         for i in range(7):
             date = self.this_week_start.date() + datetime.timedelta(i)
             self.col_dict[f'{date}'] = f'{chr(77 + i)}'
@@ -132,19 +153,26 @@ class DailyReportFactory(object):
             else:
                 self.col_dict[f'{date}_volume'] = f'A{chr(65 + i - 3)}'
 
-    def check_months(self, item):
+    def check_months(self, profile: MonitorProfile):
+        """
+        若品項的監控月份為日報表的月份區間，則將此品項的 row number 加入顯示列表內(row_visible)
+
+        :param profile
+        """
+
         # 不在監控品項月份變更底色改為在顯示月份內的品項顯示
         # if item.months.filter(name__icontains=self.specify_day.month) or item.always_display:
-        # 原判斷條件導致10/11/12月份的品項在1/2月分也會出現
-        if item.months.filter(name=f'{self.specify_day.month}月') or item.always_display:
-            self.row_visible.append(item.row)
-            if item.product.name == '梨':
+        # 原判斷條件導致 10, 11, 12 月份的品項在 1, 2 月分也會出現
+        if profile.months.filter(name=f'{self.specify_day.month}月') or profile.always_display:
+            self.row_visible.append(profile.row)
+
+            if profile.product.name == '梨':
                 if self.specify_day.month in [5, 6]:
                     self.item_desc.append('豐水梨')
                 elif self.specify_day.month in [7, 8]:
                     self.item_desc.append('新興梨')
             else:
-                self.item_desc.append(item.product.name)
+                self.item_desc.append(profile.product.name)
 
     def input_sheet_date(self, sheet, index):
         month = (self.this_week_start + datetime.timedelta(index)).month
@@ -155,55 +183,108 @@ class DailyReportFactory(object):
         sheet[f'{sym}8'] = f'{month}月\n{day}日'
         return sheet
 
-    def get_data(self, query_set, product, row, monitor_price):
-        qs, has_volume, has_weight = get_group_by_date_query_set(query_set, self.last_week_start, self.this_week_end)
-        self.result[product] = {}
-        for i, q in qs.iterrows():
+    def get_data(
+            self,
+            query_set: QuerySet,
+            product_name: str,
+            row: int,
+            monitor_price: Optional[float] = None
+    ):
+        """
+        將最近一週當日價格與計算最近一週平均價、與前一週比較、交易量、與前一週比較等資訊，寫入 self.result dict
 
+        :param query_set: 日交易 QuerySet，尚未選擇日期區間
+        :param product_name: 品項名稱
+        :param row: int: Excel row number
+        :param monitor_price: Optional[float]: 監控價格
+        """
+        result_tuple = get_group_by_date_query_set(query_set, self.last_week_start, self.this_week_end)
+        df: pd.DataFrame = result_tuple[0]
+        has_volume: bool = result_tuple[1]
+        has_weight: bool = result_tuple[2]
+        self.result[product_name] = {}
+
+        for _, q in df.iterrows():
+
+            """
+            The dict will like this:
+            {
+                '青香蕉(內銷)': {
+                  'M71': 60.8,
+                  'N71': 62.0,
+                  'O71': 62.4,
+                  'P71': 62.8,
+                  'Q71': 63.4,
+                  'S71': 63.6
+                  }
+            }
+            """
             if q['date'] >= self.this_week_start.date():
-                self.result[product].update(
+                self.result[product_name].update(
                     {f"""{self.col_dict[f"{q['date']}"]}{row}""": q['avg_price']}
                 )
             if has_volume and q['date'] >= self.this_week_start.date():
-                self.result[product].update(
+                self.result[product_name].update(
                     {f"""{self.col_dict[f"{q['date']}_volume"]}{row}""": q[
                         'sum_volume'
                     ]
                      })
-        last_qs = qs[(pd.to_datetime(qs['date']).dt.date >= self.last_week_start.date())
-                     & (pd.to_datetime(qs['date']).dt.date <= self.last_week_end.date())]
-        this_qs = qs[(pd.to_datetime(qs['date']).dt.date >= self.this_week_start.date())
-                     & (pd.to_datetime(qs['date']).dt.date <= self.this_week_end.date())]
 
-        last_avg_price = get_avg_price(last_qs, has_volume, has_weight)
-        this_avg_price = get_avg_price(this_qs, has_volume, has_weight)
-        if last_avg_price > 0:
-            self.result[product].update(
-                {
-                    f'L{row}': (this_avg_price - last_avg_price) / last_avg_price * 100
-                }
+        # 篩選出前一週資料
+        last_week_df = df[(pd.to_datetime(df['date']).dt.date >= self.last_week_start.date())
+                     & (pd.to_datetime(df['date']).dt.date <= self.last_week_end.date())]
+
+        # 篩選出當週資料
+        this_week_df = df[(pd.to_datetime(df['date']).dt.date >= self.this_week_start.date())
+                     & (pd.to_datetime(df['date']).dt.date <= self.this_week_end.date())]
+
+        last_week_avg_price = get_avg_price(last_week_df, has_volume, has_weight)
+        this_week_avg_price = get_avg_price(this_week_df, has_volume, has_weight)
+
+        if last_week_avg_price > 0:
+            # 計算 '與前一週比較(%)' 欄位
+            self.result[product_name].update(
+                {f'L{row}': (this_week_avg_price - last_week_avg_price) / last_week_avg_price * 100}
             )
+
         if has_volume:
-            last_avg_volume = get_avg_volume(last_qs)
-            this_avg_volume = get_avg_volume(this_qs)
-            self.result[product].update({f'T{row}': this_avg_volume})
-            if last_avg_volume > 0:
-                self.result[product].update(
+            last_week_avg_volume = get_avg_volume(last_week_df)
+            this_week_avg_volume = get_avg_volume(this_week_df)
+
+            # T 欄為當週交易量欄位
+            self.result[product_name].update({f'T{row}': this_week_avg_volume})
+
+            if last_week_avg_volume > 0:
+                self.result[product_name].update(
                     {
-                        f'U{row}': (this_avg_volume - last_avg_volume) / last_avg_volume * 100
+                        # U 欄為 '與前一週比較(%)' 交易量欄位
+                        f'U{row}': (this_week_avg_volume - last_week_avg_volume) / last_week_avg_volume * 100
                     }
                 )
+
+        # '監控價格' 欄位
         if monitor_price:
-            self.result[product].update({f'F{row}': monitor_price})
-        self.result[product].update(
-            {f'H{row}': this_avg_price, f'W{row}': last_avg_price}
+            self.result[product_name].update({f'F{row}': monitor_price})
+
+        # 當週(H) 與 前一週(W) '平均價格' 欄位
+        self.result[product_name].update(
+            {f'H{row}': this_week_avg_price, f'W{row}': last_week_avg_price}
         )
 
-    def update_data(self, query_set, product, row):
+    def update_data(self, query_set: QuerySet, product_name: str, row: int):
+        """
+        計算 'M-1 年 N 月平均價格' 欄位(G)
+
+        :param query_set: QuerySet
+        :param product_name: str
+        :param row: int
+        """
+
         qs, has_volume, has_weight = get_group_by_date_query_set(query_set)
         last_year_avg_price = get_avg_price(qs, has_volume, has_weight)
+
         if last_year_avg_price > 0:
-            self.result[product].update({f'G{row}': last_year_avg_price})
+            self.result[product_name].update({f'G{row}': last_year_avg_price})
 
     def update_rams(self, item, row):
         query_set = DailyTran.objects.filter(product__in=item.product_list(), source__in=item.sources())
@@ -271,23 +352,24 @@ class DailyReportFactory(object):
         monitor = MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False)
 
         for item in monitor:
-            # self.row_visible.append(item.row)
             query_set = DailyTran.objects.filter(product__in=item.product_list())
 
             # 因應措施是梨
             if self.specify_day.month in [5, 6]:
                 if item.product.id == 50182:
-                    # 56只抓豐水梨 50186
+                    # 5, 6 月只抓豐水梨 50186
                     query_set = query_set.filter(product=50186)
             elif self.specify_day.month in [7, 8]:
                 if item.product.id == 50182:
-                    # 78只抓新興梨 50185
+                    # 7, 8 月只抓新興梨 50185
                     query_set = query_set.filter(product=50185)
 
             if item.sources():
                 query_set = query_set.filter(source__in=item.sources())
+
             self.get_data(query_set, item.product.name, item.row, item.price)
-            # last year avg_price of month
+
+            # 得到前一年同月份資料
             query_set = DailyTran.objects.filter(product__in=item.product_list(),
                                                  date__year=self.specify_day.year - 1,
                                                  date__month=self.specify_day.month)
@@ -301,8 +383,10 @@ class DailyReportFactory(object):
                 if item.product.id == 50182:
                     # 78只抓新興梨 50185
                     query_set = query_set.filter(product=50185)
+
             if item.sources():
                 query_set = query_set.filter(source__in=item.sources())
+
             self.update_data(query_set, item.product.name, item.row)
 
             if '羊' in item.product.name:
@@ -313,6 +397,7 @@ class DailyReportFactory(object):
 
         # 長糯, 稻穀, 全部花卉 L, 火鶴花 FB, 文心蘭 FO3
         extra_product = [(3001, 10), (3002, 9), (3508, 99), (3509, 100), (3510, 103)]
+
         for item in extra_product:
             self._extract_data(item[1], WatchlistItem, item[0], None, self.specify_day)
 
@@ -326,23 +411,33 @@ class DailyReportFactory(object):
         self._extract_data(107, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
                            self.specify_day)
 
+        # TODO: 新增 '寶島梨' 至 row 56
+
     def _extract_data(self, row, model, product_id, sources=None, date=None):
         self.row_visible.append(row)
+
         if model == WatchlistItem:
             watchlist_item = model.objects.filter(id=product_id).first()
             product = watchlist_item.product
+
             if watchlist_item.sources.all():
                 sources = watchlist_item.sources.all()
         else:
             product = model.objects.get(id=product_id)
+
         query_set = DailyTran.objects.filter(product=product)
+
         if sources:
             query_set = query_set.filter(source__in=sources)
+
         self.get_data(query_set, f'{product.name}{product.type}', row, None)
+
         if date:
             query_set = DailyTran.objects.filter(product=product, date__year=date.year - 1, date__month=date.month)
+
             if sources:
                 query_set = query_set.filter(source__in=sources)
+
             self.update_data(query_set, f'{product.name}{product.type}', row)
 
     @staticmethod
@@ -369,9 +464,8 @@ class DailyReportFactory(object):
 
         for i in range(7):
             sheet = self.input_sheet_date(sheet, i)
-        sheet['G6'] = (
-            f'{self.specify_day.year - 1912}\n年{self.specify_day.month}月\n平均價格'
-        )
+
+        sheet['G6'] = f'{self.specify_day.year - 1912}\n年{self.specify_day.month}月\n平均價格'
         last_week_range = f'{self.last_week_start.month}/{self.last_week_start.day}~{self.last_week_end.month}/{self.last_week_end.day}'
         sheet['W8'] = last_week_range
 
@@ -405,6 +499,7 @@ class DailyReportFactory(object):
                 # 資料來源字型統一為標楷體
                 cell.font = Font(name='標楷體', size=13)
                 row_no = cell.row
+
                 if row_no > 135:
                     cell.value = None
 
@@ -412,6 +507,7 @@ class DailyReportFactory(object):
         sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
 
         now_row = 136
+
         # 一般農產品的資料來源說明欄位處理
         for i in desc_1:
             item_name = i[0]
@@ -423,16 +519,19 @@ class DailyReportFactory(object):
                 tmp = (now_row == 136 and '3.') or '   '
                 td.value = f"{tmp}{desc_1_text}；"
                 now_row += 1
+
         td = sheet.cell(row=now_row - 1, column=1)
         td.value = td.value.replace('；', '—農產品價格查報，本部農糧署。')
         desc_2_tmp = []
         pn = 4
+
         for item_name in desc_2:
             if item_name in self.item_desc:
                 if item_name == '柿子':
                     desc_2_tmp.append('甜柿')
                 else:
                     desc_2_tmp.append(item_name)
+
         if desc_2_tmp:
             td = sheet.cell(row=now_row, column=1)
             desc_2_text = '4.' + '、'.join(desc_2_tmp) + \
@@ -440,6 +539,7 @@ class DailyReportFactory(object):
             td.value = desc_2_text
             now_row += 1
             pn += 1
+
         # 其餘花卉,畜禽,水產類的資料來源說明欄位處理
         for p in desc_3:
             td = sheet.cell(row=now_row, column=1)

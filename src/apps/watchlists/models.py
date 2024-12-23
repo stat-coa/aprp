@@ -63,9 +63,10 @@ class Watchlist(Model):
         if self.is_default:
             try:
                 watchlist = Watchlist.objects.get(is_default=True)
+
                 if self != watchlist:
-                    watchlist.update(is_default=False)
-                    watchlist.monitorprofile_set.update(is_active=False)
+                    watchlist.is_default = False
+                    watchlist.save()
             except Watchlist.DoesNotExist:
                 pass
 

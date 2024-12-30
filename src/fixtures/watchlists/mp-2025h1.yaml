@@ -496,26 +496,27 @@
             2.輔導加工
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
-- model: watchlists.MonitorProfile
-  pk: 1424
-  fields:
-    product: 50202 # 蓮霧
-    watchlist: 16
-    type: 2
-    price: 36.2
-    row: 69
-    comparator: __lt__
-    color: danger
-    info: |
-          1.蓮霧主要於產地銷售，餘送批發市場，以產地價格監控
-          2.參酌農民生產成本及產地價格調查資料訂定
-    period: |
-            12月~次年3月
-    months: [1, 2, 3, 12]
-    action: |
-            1.拓展外銷
-            2.輔導加工
-            3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
+# 2024/12/30 114上半年移除監控蓮霧
+#- model: watchlists.MonitorProfile
+#  pk: 1424
+#  fields:
+#    product: 50202 # 蓮霧
+#    watchlist: 16
+#    type: 2
+#    price: 36.2
+#    row: 69
+#    comparator: __lt__
+#    color: danger
+#    info: |
+#          1.蓮霧主要於產地銷售，餘送批發市場，以產地價格監控
+#          2.參酌農民生產成本及產地價格調查資料訂定
+#    period: |
+#            12月~次年3月
+#    months: [1, 2, 3, 12]
+#    action: |
+#            1.拓展外銷
+#            2.輔導加工
+#            3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
   pk: 1425

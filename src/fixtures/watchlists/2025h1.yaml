@@ -327,12 +327,13 @@
     sources: [20001, 20002]
     parent: 16
 
-- model: watchlists.WatchlistItem
-  pk: 14216
-  fields:
-    product: 59007 # 蓮霧 產地
-    sources: [10054, 10055, 10056]
-    parent: 16
+# 114 上半年取消蓮霧
+#- model: watchlists.WatchlistItem
+#  pk: 14216
+#  fields:
+#    product: 59007 # 蓮霧 產地
+#    sources: [10054, 10055, 10056]
+#    parent: 16
 
 - model: watchlists.WatchlistItem
   pk: 14217

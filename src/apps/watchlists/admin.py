@@ -48,6 +48,7 @@ class WatchlistItemAdmin(admin.ModelAdmin):
     search_fields = (
         'id',
         'product__name',
+        'parent__name',
     )
 
 

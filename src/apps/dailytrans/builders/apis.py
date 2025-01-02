@@ -333,10 +333,15 @@ class Api(AbstractApi):
                     # get the existed DailyTran record
                     existed_tran = DailyTran.objects.get(id=int(series['id'] or 0))
 
-                    if series['avg_price_x']:
+                    # We set the `not_updated` field to -999 to indicate that the record has been added manually
+                    # and should not be updated or deleted by the system.
+                    if series['avg_price_x'] and existed_tran.not_updated >= 0:
                         # if the avg_price in API is not None, update the existed record
                         self._update_data(series, existed_tran)
                     else:
+                        if existed_tran.not_updated < 0:
+                            continue
+
                         # if the avg_price in API is None, delete the existed record
                         existed_tran.delete()
                         self.LOGGER.warning(msg=f"The DailyTran data of the product: {series['product__code']} "

@@ -24,7 +24,7 @@ class FruitModelForm(ModelForm):
     def parent_field_choices(self):
         qs_products = Fruit.objects.all()
 
-        return [(obj.id, f"{obj.name} (id: {obj.id})") for obj in qs_products]
+        return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_products]
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -17,12 +17,22 @@ class DailyTranModelForm(ModelForm):
                  label_suffix=None, empty_permitted=False, instance=None):
         super().__init__(data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted, instance)
         self.fields['product'].choices = self.product_field_choices
+        self.fields['source'].choices = self.source_field_choices
 
     @property
     def product_field_choices(self):
         qs_products = AbstractProduct.objects.all()
 
-        return [(obj.id, f"{obj.name} (id: {obj.id})") for obj in qs_products]
+        return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_products]
+
+    @property
+    def source_field_choices(self):
+        qs_sources = Source.objects.all()
+
+        choices = [("", "---------")]
+        choices += [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_sources]
+
+        return choices
 
     def clean(self):
         product = self.cleaned_data.get('product')

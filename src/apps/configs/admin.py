@@ -170,6 +170,25 @@ class Last5YearsItemsModelForm(ModelForm):
         model = Last5YearsItems
         exclude = ['update_time']
 
+    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
+                 label_suffix=None, empty_permitted=False, instance=None):
+        super().__init__(data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted, instance)
+        self.fields['product_id'].choices = self.product_field_choices
+        self.fields['source'].choices = self.source_field_choices
+
+    @property
+    def product_field_choices(self):
+        qs_products = AbstractProduct.objects.all()
+
+        return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_products]
+
+    @property
+    def source_field_choices(self):
+        qs_sources = Source.objects.all()
+
+        return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_sources]
+
+
 class Last5YearsItemsAdmin(admin.ModelAdmin):
     form = Last5YearsItemsModelForm
     list_display = ['id', 'name', 'enable', 'update_time', 'create_time']

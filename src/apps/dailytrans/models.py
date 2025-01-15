@@ -1,7 +1,6 @@
-from typing import Optional
-
-from django.utils import timezone
 import datetime
+from typing import Optional, List
+
 from dateutil import rrule
 from django.db.models import (
     Model,
@@ -14,7 +13,10 @@ from django.db.models import (
     IntegerField,
     CharField,
 )
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+
+from apps.configs.models import AbstractProduct, Source
 
 
 class DailyTranQuerySet(QuerySet):
@@ -59,6 +61,16 @@ class DailyTranQuerySet(QuerySet):
             date_ranges.extend(date_range)
 
         return self.filter(date__in=date_ranges)
+
+    def filter_by_date_lte(
+            self,
+            days: List[datetime.datetime],
+            products: List[AbstractProduct],
+            sources: Optional[List[Source]] = None
+    ) -> List['DailyTran']:
+        qs = self.filter(product__in=products, source__in=sources) if sources else self.filter(product__in=products)
+
+        return [qs.filter(date__lte=d.date()).order_by('-date').first() for d in days]
 
 
 class DailyTran(Model):

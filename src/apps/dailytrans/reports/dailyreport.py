@@ -1208,7 +1208,7 @@ class SimplifyDailyReportFactory:
     
     @property
     def show_monitor(self):
-        return self.monitor.months.filter(name=f'{self.specify_day.month}月') or self.monitor.always_display
+        return self.monitor.months.filter(name=f'{self.specify_day.month}月').exists() or self.monitor.always_display
 
     @property
     def monitor_has_desc(self):

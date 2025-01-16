@@ -14,14 +14,6 @@ BASE_DIR = environ.Path(__file__) - 3
 
 
 @pytest.fixture
-def load_base_fixtures():
-    call_command('loaddata', 'configs-type-test.yaml', verbosity=0)
-    call_command('loaddata', 'configs-unit-test.yaml', verbosity=0)
-    call_command('loaddata', 'configs-config-test.yaml', verbosity=0)
-    call_command('loaddata', 'configs-source-test.yaml', verbosity=0)
-
-
-@pytest.fixture
 def load_crops_wholesale_fixtures(load_base_fixtures):
     call_command('loaddata', 'configs-abstractproduct-crops-test.yaml', verbosity=0)
     call_command('loaddata', 'dailytrans-cog05-test.yaml', verbosity=0)

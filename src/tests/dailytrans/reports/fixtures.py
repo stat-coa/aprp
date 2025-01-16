@@ -1,5 +1,4 @@
 import pytest
-from django.contrib.auth.models import User
 from django.core.management import call_command
 
 
@@ -14,9 +13,12 @@ def load_month_fixtures():
 
 
 @pytest.fixture
-def create_user():
-    User.objects.create_user('admin', 'admin', 'admin@mail.com').save()
+def load_watchlist_fixture():
+    call_command('loaddata', 'watchlists-watchlist-test.yaml', verbosity=0)
+
 
 @pytest.fixture
-def load_monitor_profile_fixtures(load_base_fixtures, load_month_fixtures,load_abstract_product_fixtures, create_user):
+def load_monitor_profile_fixtures(
+    load_base_fixtures, load_month_fixtures, load_abstract_product_fixtures, load_watchlist_fixture
+):
     call_command('loaddata', 'mp-2024h2-test.yaml', verbosity=0)

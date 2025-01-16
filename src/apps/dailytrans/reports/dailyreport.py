@@ -1081,8 +1081,9 @@ class SimplifyDailyReportFactory:
         self.result: Dict[str, Dict[str, float]] = {}
         self.query = QueryString()
         self.excel_handler = ExcelHandler(self)
-        self._watchlist: Optional[Watchlist] = None
-        self._monitor_profile_qs: Optional[DailyTranQuerySet] = None
+
+        self.__watchlist: Optional[Watchlist] = None
+        self.__monitor_profile_qs: Optional[DailyTranQuerySet] = None
         self.__col_mapping: Optional[Dict[str, str]] = None
         self.__monitor: Optional[MonitorProfile] = None
         self.__two_weeks_handler: Optional[DailyTranHandler] = None
@@ -1114,21 +1115,21 @@ class SimplifyDailyReportFactory:
 
     @property
     def watchlist(self):
-        if self._watchlist is None:
-            self._watchlist = Watchlist.objects.filter(
+        if self.__watchlist is None:
+            self.__watchlist = Watchlist.objects.filter(
                 start_date__year=self.specify_day.year,
                 start_date__month__lte=self.specify_day.month,
                 end_date__month__gte=self.specify_day.month
             ).first()
 
-        return self._watchlist
+        return self.__watchlist
 
     @property
     def monitor_profile_qs(self):
-        if self._monitor_profile_qs is None:
-            self._monitor_profile_qs = MonitorProfile.objects.filter(watchlist=self.watchlist, row__isnull=False)
+        if self.__monitor_profile_qs is None:
+            self.__monitor_profile_qs = MonitorProfile.objects.filter(watchlist=self.watchlist, row__isnull=False)
 
-        return self._monitor_profile_qs
+        return self.__monitor_profile_qs
 
     @property
     def col_mapping(self):

@@ -16,6 +16,11 @@ class MonitorProfileModelForm(ModelForm):
 class MonitorProfileAdmin(admin.ModelAdmin):
     form = MonitorProfileModelForm
     list_display = ['id', 'product', 'watchlist', 'is_active', 'price', 'color', 'info', 'period', 'action']
+    search_fields = (
+        'id',
+        'product__name',
+        'watchlist__name',
+    )
 
 
 class WatchlistItemModelForm(ModelForm):

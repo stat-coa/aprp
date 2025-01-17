@@ -1,8 +1,11 @@
 from datetime import datetime
+from unittest.mock import patch, MagicMock
 
+import pandas as pd
 import pytest
 
-from apps.dailytrans.reports.dailyreport import SimplifyDailyReportFactory
+from apps.dailytrans.models import DailyTran
+from apps.dailytrans.reports.dailyreport import SimplifyDailyReportFactory, DailyTranHandler
 
 
 @pytest.mark.django_db
@@ -38,6 +41,28 @@ class TestSimplifyDailyReportFactory:
 
         # Assert
         assert f.last_week_end == datetime.strptime('2024-11-05', '%Y-%m-%d')
+
+    def test_this_week_date_property(self):
+        # Arrange
+        f = self.get_daily_report_factory()
+
+        # Act
+        days = f.this_week_date
+
+        # Assert
+        assert days[0] == datetime.strptime('2024-11-06', '%Y-%m-%d')
+        assert days[-1] == f.specify_day
+
+    def test_last_week_date_property(self):
+        # Arrange
+        f = self.get_daily_report_factory()
+
+        # Act
+        days = f.last_week_date
+
+        # Assert
+        assert days[0] == datetime.strptime('2024-11-06', '%Y-%m-%d')
+        assert days[-1] == datetime.strptime('2024-10-30', '%Y-%m-%d')
 
     def test_watchlist_property(self, load_watchlist_fixture):
         # Arrange
@@ -102,24 +127,147 @@ class TestSimplifyDailyReportFactory:
         # Assert
         assert f.monitor_has_desc is False
 
-    def test_this_week_date_property(self):
-        # Arrange
-        f = self.get_daily_report_factory()
 
-        # Act
-        days = f.this_week_date
+@pytest.mark.django_db
+class TestDailyTranHandler:
+    @staticmethod
+    def get_daily_trans_df() -> pd.DataFrame:
+        return (
+            pd
+            .DataFrame(list(DailyTran.objects.all().values()))
+            .sort_values('date')
+        )
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_has_volume_property(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        # Case1: has volume
+        raw_df = self.get_daily_trans_df()
+        df = raw_df.copy()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
 
         # Assert
-        assert days[0] == datetime.strptime('2024-11-06', '%Y-%m-%d')
-        assert days[-1] == f.specify_day
+        assert h.has_volume == True
 
-    def test_last_week_date_property(self):
-        # Arrange
-        f = self.get_daily_report_factory()
-
-        # Act
-        days = f.last_week_date
+        # Case2: no volume - empty dataframe
+        df = pd.DataFrame()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
 
         # Assert
-        assert days[0] == datetime.strptime('2024-11-06', '%Y-%m-%d')
-        assert days[-1] == datetime.strptime('2024-10-30', '%Y-%m-%d')
+        assert h.has_volume == False
+
+        # Case3: no volume - no value of volume column
+        mock_read_sql_query.return_value = raw_df.copy()
+        h = DailyTranHandler('', {})
+        h.df.volume = None
+
+        # Assert
+        assert h.has_volume == False
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_has_weight_property(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        # Case1: has weight
+        raw_df = self.get_daily_trans_df()
+        df = raw_df.copy()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        h.df.avg_weight = 1
+
+        # Assert
+        assert h.has_weight == True
+
+        # Case2: no weight - empty dataframe
+        df = pd.DataFrame()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+
+        # Assert
+        assert h.has_weight == False
+
+        # Case3: no weight - no value of weight column
+        mock_read_sql_query.return_value = raw_df.copy()
+        h = DailyTranHandler('', {})
+
+        # Assert
+        assert h.has_weight == False
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_fulfilled_df_property_by_eggplant(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+
+        # Act
+        df_fulfilled = h.fulfilled_df
+
+        # Assert
+        assert df_fulfilled.shape[0] == df.shape[0]
+        assert df_fulfilled.query('vol_for_calculation == 1').shape[0] == 0
+        assert df_fulfilled.wt_for_calculation.sum() == df.assign(avg_weight=lambda x: x.volume).avg_weight.sum()
+        assert df_fulfilled.avg_price.sum() == df.assign(avg_price=lambda x: x.avg_price * x.volume).avg_price.sum()
+        assert df_fulfilled.query('source_id == 1').shape[0] == 0
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_fulfilled_df_property_by_hog(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_hog):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+
+        # Act
+        df_fulfilled = h.fulfilled_df
+
+        # Assert
+        assert df_fulfilled.shape[0] == df.shape[0]
+        assert df_fulfilled.query('wt_for_calculation == 1').shape[0] == 0
+        assert df_fulfilled.wt_for_calculation.sum() == df.assign(
+            avg_weight=lambda x: x.volume * x.avg_weight
+        ).avg_weight.sum()
+        assert df_fulfilled.avg_price.sum() == df.assign(
+            avg_price=lambda x: x.avg_price * x.volume * x.avg_weight
+        ).avg_price.sum()
+        assert df_fulfilled.query('source_id == 1').shape[0] == 0
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_fulfilled_df_property_by_banana(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_banana):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        h.df.source_id = None
+
+        # Act
+        df_fulfilled = h.fulfilled_df
+
+        # Assert
+        assert df_fulfilled.shape[0] == df.shape[0]
+        assert df_fulfilled.query('vol_for_calculation == 1').shape[0] == df.shape[0]
+        assert df_fulfilled.query('wt_for_calculation == 1').shape[0] == df.shape[0]
+        assert df_fulfilled.query('source_id == 1').shape[0] == df.shape[0]
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_df_with_group_by_date_by_eggplant(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_fulfilled = h.fulfilled_df
+
+        # Act
+        df_grouped = h.df_with_group_by_date
+
+        # Assert
+        assert df_grouped.query('avg_avg_weight == 1').shape[0] == df_fulfilled.groupby('date').sum().shape[0]
+        assert df_grouped.sum_volume.sum() == df_fulfilled.volume.sum()
+        assert (df_grouped.num_of_source.sum() == df_fulfilled
+                .groupby(['date', 'source_id']).sum().assign(num_of_source=1).num_of_source.sum())

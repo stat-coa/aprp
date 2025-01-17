@@ -22,3 +22,18 @@ def load_monitor_profile_fixtures(
     load_base_fixtures, load_month_fixtures, load_abstract_product_fixtures, load_watchlist_fixture
 ):
     call_command('loaddata', 'mp-2024h2-test.yaml', verbosity=0)
+
+
+@pytest.fixture
+def load_daily_tran_fixtures_of_eggplant(load_monitor_profile_fixtures):
+    call_command('loaddata', 'dailytrans-eggplant-test.yaml', verbosity=0)
+
+
+@pytest.fixture
+def load_daily_tran_fixtures_of_hog(load_monitor_profile_fixtures):
+    call_command('loaddata', 'dailytrans-hog-test.yaml', verbosity=0)
+
+
+@pytest.fixture
+def load_daily_tran_fixtures_of_banana(load_monitor_profile_fixtures):
+    call_command('loaddata', 'dailytrans-banana-test.yaml', verbosity=0)

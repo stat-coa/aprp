@@ -703,6 +703,7 @@ class QueryString:
 
         return self
 
+
 class DailyTranHandler:
     __conn: Optional[Engine] = None
 
@@ -735,7 +736,7 @@ class DailyTranHandler:
             .assign(wt_for_calculation=lambda x: x['wt_for_calculation'] * x['vol_for_calculation'])
         )
 
-        # 根據來源市場 ID 分組計算
+        # 若所有資料無來源 ID，則將來源 ID 填充為 1
         return df.assign(source_id=lambda x: x['source_id'].fillna(1)) if all(pd.isna(df['source_id'])) else df
 
     @property
@@ -743,23 +744,15 @@ class DailyTranHandler:
         if self.df.empty:
             return self.df
 
-        has_volume = self.has_volume
-        has_weight = self.has_weight
-        df = self.fulfilled_df
-
-        # 按日期和來源市場 ID 分組
-        group = df.groupby(['date', 'source_id'])
-        df_fin = group.sum()
-        df_fin['num_of_source'] = 1
-
-        # 按日期分組
-        group = df_fin.groupby('date')
-        df_fin = group.sum()
-
-        # 計算最終的平均價格和重量
+        # 按日期和來源市場 ID 分組後，再按日期分組，最後計算最終的平均價格和重量
         df_fin = (
-            df_fin
-            .assign(avg_price=lambda x: x['avg_price'] / x['wt_for_calculation'])
+            self
+            .fulfilled_df
+            .groupby(['date', 'source_id'])
+            .sum()
+            .assign(num_of_source=1)
+            .groupby('date')
+            .sum()
             .assign(avg_weight=lambda x: x['wt_for_calculation'] / x['vol_for_calculation'])
             .reset_index()
             .sort_values('date')
@@ -767,9 +760,9 @@ class DailyTranHandler:
         )
 
         # 處理缺失的量和重量數據
-        if not has_volume:
+        if not self.has_volume:
             df_fin['sum_volume'] = df_fin['num_of_source']
-        if not has_weight:
+        if not self.has_weight:
             df_fin['avg_avg_weight'] = 1
 
         return df_fin[['date', 'avg_price', 'num_of_source', 'sum_volume', 'avg_avg_weight']]
@@ -1098,6 +1091,23 @@ class SimplifyDailyReportFactory:
         return self.excel_handler.file_name, self.excel_handler.file_path
 
     @property
+    def col_mapping(self):
+        if self.__col_mapping is None:
+            self.__col_mapping = {}
+
+            for i in range(7):
+                date = self.this_week_start.date() + datetime.timedelta(i)
+
+                self.__col_mapping[f'{date}'] = f'{chr(77 + i)}'
+
+                if i < 3:
+                    self.__col_mapping[f'{date}_volume'] = f'{chr(88 + i)}'
+                else:
+                    self.__col_mapping[f'{date}_volume'] = f'A{chr(65 + i - 3)}'
+
+        return self.__col_mapping
+
+    @property
     def this_week_start(self):
         return self.specify_day - datetime.timedelta(6)
 
@@ -1112,6 +1122,22 @@ class SimplifyDailyReportFactory:
     @property
     def last_week_end(self):
         return self.this_week_end - datetime.timedelta(7)
+
+    @property
+    def this_week_date(self):
+        return [self.this_week_start + datetime.timedelta(i) for i in range(7)]
+
+    @property
+    def last_week_date(self):
+        return [self.this_week_start - datetime.timedelta(i) for i in range(8)]
+
+    @property
+    def show_monitor(self):
+        return self.monitor.months.filter(name=f'{self.specify_day.month}月').exists() or self.monitor.always_display
+
+    @property
+    def monitor_has_desc(self):
+        return self.monitor.product.name in self.excel_handler.dict_crop_desc
 
     @property
     def watchlist(self):
@@ -1130,23 +1156,6 @@ class SimplifyDailyReportFactory:
             self.__monitor_profile_qs = MonitorProfile.objects.filter(watchlist=self.watchlist, row__isnull=False)
 
         return self.__monitor_profile_qs
-
-    @property
-    def col_mapping(self):
-        if self.__col_mapping is None:
-            self.__col_mapping = {}
-
-            for i in range(7):
-                date = self.this_week_start.date() + datetime.timedelta(i)
-
-                self.__col_mapping[f'{date}'] = f'{chr(77 + i)}'
-
-                if i < 3:
-                    self.__col_mapping[f'{date}_volume'] = f'{chr(88 + i)}'
-                else:
-                    self.__col_mapping[f'{date}_volume'] = f'A{chr(65 + i - 3)}'
-
-        return self.__col_mapping
 
     @property
     def monitor(self):
@@ -1205,22 +1214,6 @@ class SimplifyDailyReportFactory:
     @visible_rows.setter
     def visible_rows(self, row: int):
         self.__visible_rows.append(row)
-    
-    @property
-    def show_monitor(self):
-        return self.monitor.months.filter(name=f'{self.specify_day.month}月').exists() or self.monitor.always_display
-
-    @property
-    def monitor_has_desc(self):
-        return self.monitor.product.name in self.excel_handler.dict_crop_desc
-
-    @property
-    def this_week_date(self):
-        return [self.this_week_start + datetime.timedelta(i) for i in range(7)]
-
-    @property
-    def last_week_date(self):
-        return [self.this_week_start - datetime.timedelta(i) for i in range(8)]
 
     @staticmethod
     def get_avg_price(handler: DailyTranHandler, df: pd.DataFrame):

@@ -753,6 +753,7 @@ class DailyTranHandler:
             .assign(num_of_source=1)
             .groupby('date')
             .sum()
+            .assign(avg_price=lambda x: x['avg_price'] / x['wt_for_calculation'])
             .assign(avg_weight=lambda x: x['wt_for_calculation'] / x['vol_for_calculation'])
             .reset_index()
             .sort_values('date')

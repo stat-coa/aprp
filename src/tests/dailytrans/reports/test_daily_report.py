@@ -262,6 +262,24 @@ class TestDailyTranHandler:
         mock_read_sql_query.return_value = df
         h = DailyTranHandler('', {})
         df_fulfilled = h.fulfilled_df
+        expected_avg_price = (
+            round(
+                df_fulfilled
+                    .groupby(['date'])
+                    .sum()
+                    .assign(avg_price=lambda x: x.avg_price / x.wt_for_calculation)
+                    .avg_price
+                    .sum(),
+                2
+            )
+        )
+        expected_num_of_source = (
+            df_fulfilled
+            .groupby(['date', 'source_id'])
+            .sum()
+            .assign(num_of_source=1)
+            .num_of_source.sum()
+        )
 
         # Act
         df_grouped = h.df_with_group_by_date
@@ -269,5 +287,42 @@ class TestDailyTranHandler:
         # Assert
         assert df_grouped.query('avg_avg_weight == 1').shape[0] == df_fulfilled.groupby('date').sum().shape[0]
         assert df_grouped.sum_volume.sum() == df_fulfilled.volume.sum()
-        assert (df_grouped.num_of_source.sum() == df_fulfilled
-                .groupby(['date', 'source_id']).sum().assign(num_of_source=1).num_of_source.sum())
+        assert round(df_grouped.avg_price.sum(), 2) == expected_avg_price
+        assert df_grouped.num_of_source.sum() == expected_num_of_source
+
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_df_with_group_by_date_with_eggplant(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_fulfilled = h.fulfilled_df
+        expected_avg_price = (
+            round(
+                df_fulfilled
+                    .groupby(['date'])
+                    .sum()
+                    .assign(avg_price=lambda x: x.avg_price / x.wt_for_calculation)
+                    .avg_price
+                    .sum(),
+                2
+            )
+        )
+        expected_num_of_source = (
+            df_fulfilled
+            .groupby(['date', 'source_id'])
+            .sum()
+            .assign(num_of_source=1)
+            .num_of_source.sum()
+        )
+
+        # Act
+        df_grouped = h.df_with_group_by_date
+
+        # Assert
+        assert df_grouped.query('avg_avg_weight == 1').shape[0] == df_fulfilled.groupby('date').sum().shape[0]
+        assert df_grouped.sum_volume.sum() == df_fulfilled.volume.sum()
+        assert round(df_grouped.avg_price.sum(), 2) == expected_avg_price
+        assert df_grouped.num_of_source.sum() == expected_num_of_source

@@ -4,6 +4,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import List, Optional, Dict
 
+import numpy as np
 import openpyxl
 import pandas as pd
 from django.conf import settings
@@ -714,6 +715,10 @@ class DailyTranHandler:
         self.df = pd.read_sql_query(sql=sql, con=self.__conn, params=params)
 
     @property
+    def group_by_columns(self):
+        return ['date', 'avg_price', 'num_of_source', 'sum_volume', 'avg_avg_weight']
+
+    @property
     def has_volume(self):
         return (not self.df.empty) and (self.df['volume'].notna().sum() / self.df['avg_price'].count() > 0.8)
 
@@ -742,10 +747,14 @@ class DailyTranHandler:
     @property
     def df_with_group_by_date(self):
         if self.df.empty:
-            return self.df
+            return pd.DataFrame(columns=self.group_by_columns)
 
-        # 按日期和來源市場 ID 分組後，再按日期分組，最後計算最終的平均價格和重量
-        df_fin = (
+        # 處理流程:
+        # 1. 按日期和來源市場 ID 分組
+        # 2. 再按日期分組
+        # 3. 計算最終的平均價格(avg_price) 和 平均重量(avg_weight)
+        # 4. 處理缺失的 總交易量(sum_volume) 和 每日平均重量(avg_avg_weight)
+        df = (
             self
             .fulfilled_df
             .groupby(['date', 'source_id'])
@@ -758,15 +767,11 @@ class DailyTranHandler:
             .reset_index()
             .sort_values('date')
             .rename(columns={'volume': 'sum_volume', 'avg_weight': 'avg_avg_weight'})
+            .assign(sum_volume=lambda x: np.where(self.has_volume, x['vol_for_calculation'], x['num_of_source']))
+            .assign(avg_avg_weight=lambda x: np.where(self.has_weight, x['avg_avg_weight'], 1))
         )
 
-        # 處理缺失的量和重量數據
-        if not self.has_volume:
-            df_fin['sum_volume'] = df_fin['num_of_source']
-        if not self.has_weight:
-            df_fin['avg_avg_weight'] = 1
-
-        return df_fin[['date', 'avg_price', 'num_of_source', 'sum_volume', 'avg_avg_weight']]
+        return df[self.group_by_columns]
 
 
 class ExtraItem:

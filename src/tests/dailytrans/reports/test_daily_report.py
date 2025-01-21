@@ -339,3 +339,114 @@ class TestDailyTranHandler:
         assert round(df_grouped.avg_avg_weight.sum(), 2) == expected_avg_weight
         assert df_grouped.sum_volume.sum() == df_fulfilled.vol_for_calculation.sum()
         assert round(df_grouped.avg_price.sum(), 2) == expected_avg_price
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_get_df_query_by_date(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        f = TestSimplifyDailyReportFactory.get_daily_report_factory()
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_expected = h.df_with_group_by_date
+
+        # Case1: no date
+        df_result = h._get_df_query_by_date()
+
+        # Assert
+        assert set(pd.to_datetime(df_result.date)).issubset(set(pd.to_datetime(df_expected.date)))
+
+        # Case2: last week date
+        df_result = h._get_df_query_by_date(f.last_week_start.date(), f.last_week_end.date())
+
+        # Assert
+        assert set(pd.to_datetime(df_result.date)).issubset(set(pd.to_datetime(pd.Series(f.last_week_date))))
+
+        # Case3: this week date
+        df_result = h._get_df_query_by_date(f.this_week_start.date(), f.this_week_end.date())
+
+        # Assert
+        assert set(pd.to_datetime(df_result.date)).issubset(set(pd.to_datetime(pd.Series(f.this_week_date))))
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_get_avg_price_by_eggplant(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_grouped = h.df_with_group_by_date
+        total_price = df_grouped.avg_price * df_grouped.sum_volume
+
+        # Act
+        result_price = h.get_avg_price()
+
+        # Assert
+        assert result_price != 0
+        assert result_price == (total_price.sum() / df_grouped.sum_volume.sum())
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_get_avg_price_by_hog(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_hog):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_grouped = h.df_with_group_by_date
+        total_price = df_grouped.avg_price * df_grouped.sum_volume * df_grouped.avg_avg_weight
+        total_volume_weight = df_grouped.sum_volume * df_grouped.avg_avg_weight
+
+        # Act
+        result_price = h.get_avg_price()
+
+        # Assert
+        assert result_price != 0
+        assert result_price == (total_price.sum() / total_volume_weight.sum())
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_get_avg_price_by_banana(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_banana):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_grouped = h.df_with_group_by_date
+
+        # Act
+        result_price = h.get_avg_price()
+
+        # Assert
+        assert result_price != 0
+        assert result_price == df_grouped.avg_price.mean()
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_get_avg_volume_by_eggplant(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_grouped = h.df_with_group_by_date
+
+        # Act
+        result_volume = h.get_avg_volume()
+
+        # Assert
+        assert result_volume != 0
+        assert result_volume == df_grouped.sum_volume.mean()
+
+    @patch('pandas.read_sql_query')
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_get_avg_volume_by_banana(self, conn, mock_read_sql_query, load_daily_tran_fixtures_of_banana):
+        # Arrange
+        df = self.get_daily_trans_df()
+        mock_read_sql_query.return_value = df
+        h = DailyTranHandler('', {})
+        df_grouped = h.df_with_group_by_date
+
+        # Act
+        result_volume = h.get_avg_volume()
+
+        # Assert
+        assert result_volume != 0
+        assert result_volume == df_grouped.sum_volume.mean()

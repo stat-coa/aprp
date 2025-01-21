@@ -773,7 +773,7 @@ class DailyTranHandler:
 
         return df[self.group_by_columns]
     
-    def __get_df_query_by_date(
+    def _get_df_query_by_date(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> pd.DataFrame:
         return (
@@ -788,7 +788,7 @@ class DailyTranHandler:
     def get_avg_price(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> Union[int, float]:
-        df = self.__get_df_query_by_date(start_date, end_date) 
+        df = self._get_df_query_by_date(start_date, end_date)
 
         # 新增有日均重量的品項計算平均價格公式
         if self.has_volume and self.has_weight:
@@ -807,9 +807,10 @@ class DailyTranHandler:
     def get_avg_volume(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> Union[int, float]:
-        df = self.__get_df_query_by_date(start_date, end_date)
+        df = self._get_df_query_by_date(start_date, end_date)
 
         return 0 if pd.isna(df['sum_volume'].mean()) else df['sum_volume'].mean()
+
 
 class ExtraItem:
     EXTRA_ITEMS = [

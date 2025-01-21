@@ -706,6 +706,11 @@ class QueryString:
 
 
 class DailyTranHandler:
+    """
+    此類別用於對日交易(DailyTran)資料做相關處理，為提升效能，全程使用 pandas 套件處理資料，並且
+    採用直連資料庫的方式，而非透過 Django ORM(經過測試，效能上有明顯差異)。
+    """
+
     __conn: Optional[Engine] = None
 
     def __init__(self, sql: str, params: dict):
@@ -715,19 +720,31 @@ class DailyTranHandler:
         self.df = pd.read_sql_query(sql=sql, con=self.__conn, params=params)
 
     @property
-    def group_by_columns(self):
+    def group_by_columns(self) -> List[str]:
         return ['date', 'avg_price', 'num_of_source', 'sum_volume', 'avg_avg_weight']
 
     @property
-    def has_volume(self):
+    def has_volume(self) -> bool:
+        """
+        確認資料是否有交易量(volume)
+        """
+
         return (not self.df.empty) and (self.df['volume'].notna().sum() / self.df['avg_price'].count() > 0.8)
 
     @property
-    def has_weight(self):
+    def has_weight(self) -> bool:
+        """
+        確認資料是否有平均重量(avg_weight)
+        """
+
         return (not self.df.empty) and (self.df['avg_weight'].notna().sum() / self.df['avg_price'].count() > 0.8)
 
     @property
     def fulfilled_df(self) -> pd.DataFrame:
+        """
+        針對日交易原始資料進行一些填充和計算，以便後續的資料處理
+        """
+
         df = self.df.query('volume > 0 and avg_weight > 0') if self.has_volume and self.has_weight else self.df
 
         # 數據處理和計算:
@@ -745,7 +762,11 @@ class DailyTranHandler:
         return df.assign(source_id=lambda x: x['source_id'].fillna(1)) if all(pd.isna(df['source_id'])) else df
 
     @property
-    def df_with_group_by_date(self):
+    def df_with_group_by_date(self) -> pd.DataFrame:
+        """
+        針對日交易進行日期分組，並計算平均價格和平均重量
+        """
+
         if self.df.empty:
             return pd.DataFrame(columns=self.group_by_columns)
 
@@ -776,6 +797,10 @@ class DailyTranHandler:
     def _get_df_query_by_date(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> pd.DataFrame:
+        """
+        根據日期區間篩選日交易資料
+        """
+
         return (
             self.df_with_group_by_date.query(
                 f"@pd.to_datetime(date) >= '{start_date}' and "
@@ -788,6 +813,10 @@ class DailyTranHandler:
     def get_avg_price(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> Union[int, float]:
+        """
+        計算指定日期區間的平均價格
+        """
+
         df = self._get_df_query_by_date(start_date, end_date)
 
         # 新增有日均重量的品項計算平均價格公式
@@ -807,6 +836,10 @@ class DailyTranHandler:
     def get_avg_volume(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> Union[int, float]:
+        """
+        計算指定日期區間的平均交易量
+        """
+
         df = self._get_df_query_by_date(start_date, end_date)
 
         return 0 if pd.isna(df['sum_volume'].mean()) else df['sum_volume'].mean()
@@ -1083,7 +1116,7 @@ class ExcelHandler:
                 product_names.append('甜柿')
 
         if product_names:
-            text = f'{self.desc_list_num}. {"、".join(product_names)}{self.SPECIFIED_CROP_DESC}'
+            text = f'{self.desc_list_num}.{"、".join(product_names)}{self.SPECIFIED_CROP_DESC}'
             self.__sheet.cell(row=self.desc_row_num, column=1).value = text
 
     def __set_other_desc(self):

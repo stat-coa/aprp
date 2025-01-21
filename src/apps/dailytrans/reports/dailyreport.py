@@ -2,7 +2,7 @@ import calendar
 import datetime
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 import numpy as np
 import openpyxl
@@ -772,7 +772,44 @@ class DailyTranHandler:
         )
 
         return df[self.group_by_columns]
+    
+    def __get_df_query_by_date(
+            self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
+    ) -> pd.DataFrame:
+        return (
+            self.df_with_group_by_date.query(
+                f"@pd.to_datetime(date) >= '{start_date}' and "
+                f"@pd.to_datetime(date) <= '{end_date}'"
+            )
+            if start_date and end_date
+            else self.df_with_group_by_date
+        )
+    
+    def get_avg_price(
+            self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
+    ) -> Union[int, float]:
+        df = self.__get_df_query_by_date(start_date, end_date) 
 
+        # 新增有日均重量的品項計算平均價格公式
+        if self.has_volume and self.has_weight:
+            total_price = df['avg_price'] * df['sum_volume'] * df['avg_avg_weight']
+            total_volume_weight = df['sum_volume'] * df['avg_avg_weight']
+            return total_price.sum() / total_volume_weight.sum() if len(total_volume_weight) else 0
+
+        elif self.has_volume:
+            total_price = df['avg_price'] * df['sum_volume']
+            total_volume = df['sum_volume']
+
+            return total_price.sum() / total_volume.sum() if len(total_volume) else 0
+        else:
+            return df['avg_price'].mean()
+
+    def get_avg_volume(
+            self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
+    ) -> Union[int, float]:
+        df = self.__get_df_query_by_date(start_date, end_date)
+
+        return 0 if pd.isna(df['sum_volume'].mean()) else df['sum_volume'].mean()
 
 class ExtraItem:
     EXTRA_ITEMS = [
@@ -1086,7 +1123,6 @@ class SimplifyDailyReportFactory:
         self.__col_mapping: Optional[Dict[str, str]] = None
         self.__monitor: Optional[MonitorProfile] = None
         self.__two_weeks_handler: Optional[DailyTranHandler] = None
-        self.__last_year_one_month_handler: Optional[DailyTranHandler] = None
         self.__df_two_weeks: Optional[pd.DataFrame] = None
         self.__visible_rows: List[int] = []
 
@@ -1178,40 +1214,6 @@ class SimplifyDailyReportFactory:
     @two_weeks_handler.setter
     def two_weeks_handler(self, handler: DailyTranHandler):
         self.__two_weeks_handler = handler
-        self.__df_two_weeks = None
-
-    @property
-    def last_year_one_month_handler(self):
-        return self.__last_year_one_month_handler
-
-    @last_year_one_month_handler.setter
-    def last_year_one_month_handler(self, handler: DailyTranHandler):
-        self.__last_year_one_month_handler = handler
-
-    @property
-    def df_two_weeks(self):
-        if self.__df_two_weeks is None:
-            self.__df_two_weeks = self.two_weeks_handler.df_with_group_by_date
-
-        return self.__df_two_weeks
-
-    @property
-    def df_last_week(self):
-        df = self.df_two_weeks
-
-        return df.query(
-            f"@pd.to_datetime(date) >= '{self.last_week_start.date()}' and "
-            f"@pd.to_datetime(date) <= '{self.last_week_end.date()}'"
-        )
-
-    @property
-    def df_this_week(self):
-        df = self.df_two_weeks
-
-        return df.query(
-            f"@pd.to_datetime(date) >= '{self.this_week_start.date()}' and "
-            f"@pd.to_datetime(date) <= '{self.this_week_end.date()}'"
-        )
 
     @property
     def visible_rows(self):
@@ -1220,29 +1222,6 @@ class SimplifyDailyReportFactory:
     @visible_rows.setter
     def visible_rows(self, row: int):
         self.__visible_rows.append(row)
-
-    @staticmethod
-    def get_avg_price(handler: DailyTranHandler, df: pd.DataFrame):
-        has_volume = handler.has_volume
-        has_weight = handler.has_weight
-
-        # 新增有日均重量的品項計算平均價格公式
-        if has_volume and has_weight:
-            total_price = df['avg_price'] * df['sum_volume'] * df['avg_avg_weight']
-            total_volume_weight = df['sum_volume'] * df['avg_avg_weight']
-            return total_price.sum() / total_volume_weight.sum() if len(total_volume_weight) else 0
-
-        elif has_volume:
-            total_price = df['avg_price'] * df['sum_volume']
-            total_volume = df['sum_volume']
-
-            return total_price.sum() / total_volume.sum() if len(total_volume) else 0
-        else:
-            return df['avg_price'].mean()
-
-    @staticmethod
-    def get_avg_volume(df: pd.DataFrame):
-        return 0 if pd.isna(df['sum_volume'].mean()) else df['sum_volume'].mean()
 
     @staticmethod
     def get_simple_avg_price(daily_trans: List[DailyTran]):
@@ -1279,21 +1258,25 @@ class SimplifyDailyReportFactory:
     def set_this_week_data(self): 
         self.result[self.monitor.product.name] = {}
         query = self.query.add_where_by_date_between(self.last_week_start, self.this_week_end).build()
-        handler = self.two_weeks_handler =  DailyTranHandler(query, self.query.dict_query)
+        self.two_weeks_handler =  DailyTranHandler(query, self.query.dict_query)
 
-        for named_tuple in self.df_two_weeks.itertuples():
+        for named_tuple in self.two_weeks_handler.df_with_group_by_date.itertuples():
             if named_tuple.date >= self.this_week_start.date():
                 self.result[self.monitor.product.name].update(
                     {f"""{self.col_mapping[f"{named_tuple.date}"]}{self.monitor.row}""": named_tuple.avg_price}
                 )
-            if  handler.has_volume and named_tuple.date >= self.this_week_start.date():
+            if  self.two_weeks_handler.has_volume and named_tuple.date >= self.this_week_start.date():
                 self.result[self.monitor.product.name].update(
                     {f"""{self.col_mapping[f"{named_tuple.date}_volume"]}{self.monitor.row}""": named_tuple.sum_volume}
                 )
 
     def set_avg_price_values(self):
-        last_week_avg_price = self.get_avg_price(self.two_weeks_handler, self.df_last_week)
-        this_week_avg_price = self.get_avg_price(self.two_weeks_handler, self.df_this_week)
+        last_week_avg_price = self.two_weeks_handler.get_avg_price(
+            self.last_week_start.date(), self.last_week_end.date()
+        )
+        this_week_avg_price = self.two_weeks_handler.get_avg_price(
+            self.this_week_start.date(), self.this_week_end.date()
+        )
 
         if last_week_avg_price > 0:
             self.result[self.monitor.product.name].update(
@@ -1307,8 +1290,12 @@ class SimplifyDailyReportFactory:
 
     def set_volume_values(self):
         if self.two_weeks_handler.has_volume:
-            last_week_avg_volume = self.get_avg_volume(self.df_last_week)
-            this_week_avg_volume = self.get_avg_volume(self.df_this_week)
+            last_week_avg_volume = self.two_weeks_handler.get_avg_volume(
+                self.last_week_start.date(), self.last_week_end.date()
+            )
+            this_week_avg_volume = self.two_weeks_handler.get_avg_volume(
+                self.this_week_start.date(), self.this_week_end.date()
+            )
 
             # T 欄為當週交易量欄位
             self.result[self.monitor.product.name].update({f'T{self.monitor.row}': this_week_avg_volume})
@@ -1329,7 +1316,7 @@ class SimplifyDailyReportFactory:
     def set_same_month_of_last_year_value(self):
         query = self.query.load().add_where_by_last_year_and_month(self.specify_day).build()
         handler = DailyTranHandler(query, self.query.dict_query)
-        last_year_avg_price = self.get_avg_price(handler, handler.df_with_group_by_date)
+        last_year_avg_price = handler.get_avg_price()
 
         if last_year_avg_price > 0:
             self.result[self.monitor.product.name].update({f'G{self.monitor.row}': last_year_avg_price})

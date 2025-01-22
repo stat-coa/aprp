@@ -233,7 +233,7 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
         result = {}
 
         # 品項
-        qs = Last5YearsItems.objects.filter(enable=True).order_by('product_id')
+        qs = Last5YearsItems.objects.filter(enable=True).order_by('id')
 
         # because qs has duplicate items, so we need to remove duplicate items
         items_list = []
@@ -241,8 +241,6 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
         for i in qs:
             if i not in items_list:
                 items_list.append(i)
-
-        sort_items(items_list)
 
         for i in items_list:
             pids = i.product_id.all()

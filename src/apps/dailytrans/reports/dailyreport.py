@@ -1258,7 +1258,7 @@ class SimplifyDailyReportFactory:
         self.__visible_rows.append(row)
 
     @staticmethod
-    def get_simple_avg_price(daily_trans: List[DailyTran]):
+    def get_simple_avg_price(daily_trans: List[DailyTran]) -> float:
         return (
             sum(d.avg_price for d in daily_trans) / len(daily_trans)
             if daily_trans

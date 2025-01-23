@@ -30,6 +30,11 @@ def load_daily_tran_fixtures_of_eggplant(load_monitor_profile_fixtures):
 
 
 @pytest.fixture
+def load_daily_tran_fixtures_of_eggplant_1m(load_monitor_profile_fixtures):
+    call_command('loaddata', 'dailytrans-eggplant-1m-test.yaml', verbosity=0)
+
+
+@pytest.fixture
 def load_daily_tran_fixtures_of_hog(load_monitor_profile_fixtures):
     call_command('loaddata', 'dailytrans-hog-test.yaml', verbosity=0)
 
@@ -37,3 +42,13 @@ def load_daily_tran_fixtures_of_hog(load_monitor_profile_fixtures):
 @pytest.fixture
 def load_daily_tran_fixtures_of_banana(load_monitor_profile_fixtures):
     call_command('loaddata', 'dailytrans-banana-test.yaml', verbosity=0)
+
+
+@pytest.fixture
+def load_daily_tran_fixtures_of_ram(load_monitor_profile_fixtures):
+    call_command('loaddata', 'dailytrans-ram-test.yaml', verbosity=0)
+
+
+@pytest.fixture
+def load_daily_tran_fixtures_of_cattle(load_monitor_profile_fixtures):
+    call_command('loaddata', 'dailytrans-cattle-test.yaml', verbosity=0)

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from apps.dailytrans.models import DailyTran
-from apps.dailytrans.reports.dailyreport import SimplifyDailyReportFactory, DailyTranHandler
+from apps.dailytrans.reports.dailyreport import SimplifyDailyReportFactory, DailyTranHandler, ExtraItem
 
 
 @pytest.mark.django_db
@@ -126,6 +126,222 @@ class TestSimplifyDailyReportFactory:
 
         # Assert
         assert f.monitor_has_desc is False
+
+    def test_get_simple_avg_price(self, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        f = self.get_daily_report_factory()
+        df = TestDailyTranHandler.get_daily_trans_df()
+        qs = list(DailyTran.objects.all())
+
+        # Case1: has daily trans
+        price = round(f.get_simple_avg_price(qs), 2)
+
+        # Assert
+        assert price == round(df.avg_price.mean(), 2)
+
+        # Case2: no daily trans
+        qs = []
+
+        # Assert
+        assert f.get_simple_avg_price(qs) == 0.0
+
+    @patch('pandas.read_sql_query', new_callable=MagicMock)
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_set_this_week_data(
+            self,
+            conn,
+            mock_read_sql_query: MagicMock,
+            load_daily_tran_fixtures_of_eggplant
+    ):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='茄子').first()
+        mock_read_sql_query.return_value = TestDailyTranHandler.get_daily_trans_df()
+
+        # Act
+        f.set_this_week_data()
+        expected_price_keys = {
+            f"""{f.col_mapping[f'{dt.date()}']}{f.monitor.row}"""
+            for dt in f.this_week_date
+        }
+        expected_volume_keys = {
+            f"""{f.col_mapping[f'{dt.date()}_volume']}{f.monitor.row}"""
+            for dt in f.this_week_date
+        }
+
+        # Assert
+        assert expected_price_keys.issubset(set(f.result[f.monitor.product.name].keys()))
+        assert expected_volume_keys.issubset(set(f.result[f.monitor.product.name].keys()))
+
+    @patch('pandas.read_sql_query', new_callable=MagicMock)
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_set_avg_price_values(
+            self,
+            conn,
+            mock_read_sql_query: MagicMock,
+            load_daily_tran_fixtures_of_eggplant
+    ):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='茄子').first()
+        f.result[f.monitor.product.name] = {}
+        mock_read_sql_query.return_value = TestDailyTranHandler.get_daily_trans_df()
+        f.two_weeks_handler = DailyTranHandler('', {})
+        last_week_avg_price = f.two_weeks_handler.get_avg_price(
+            f.last_week_start.date(), f.last_week_end.date()
+        )
+        this_week_avg_price = f.two_weeks_handler.get_avg_price(
+            f.this_week_start.date(), f.this_week_end.date()
+        )
+        weekly_price_change_rate = (this_week_avg_price - last_week_avg_price) / last_week_avg_price * 100
+
+        # Act
+        f.set_avg_price_values()
+
+
+        # Assert
+        assert round(f.result[f.monitor.product.name][f'L{f.monitor.row}'], 2) == round(weekly_price_change_rate, 2)
+        assert round(f.result[f.monitor.product.name][f'H{f.monitor.row}'], 2) == round(this_week_avg_price, 2)
+        assert round(f.result[f.monitor.product.name][f'W{f.monitor.row}'], 2) == round(last_week_avg_price, 2)
+
+    @patch('pandas.read_sql_query', new_callable=MagicMock)
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_set_volume_values(
+            self,
+            conn,
+            mock_read_sql_query: MagicMock,
+            load_daily_tran_fixtures_of_eggplant
+    ):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='茄子').first()
+        f.result[f.monitor.product.name] = {}
+        mock_read_sql_query.return_value = TestDailyTranHandler.get_daily_trans_df()
+        f.two_weeks_handler = DailyTranHandler('', {})
+        last_week_avg_vol = f.two_weeks_handler.get_avg_volume(
+            f.last_week_start.date(), f.last_week_end.date()
+        )
+        this_week_avg_vol = f.two_weeks_handler.get_avg_volume(
+            f.this_week_start.date(), f.this_week_end.date()
+        )
+        weekly_vol_change_rate = (this_week_avg_vol - last_week_avg_vol) / last_week_avg_vol * 100
+
+        # Act
+        f.set_volume_values()
+
+        # Assert
+        assert round(f.result[f.monitor.product.name][f'T{f.monitor.row}'], 2) == round(this_week_avg_vol, 2)
+        assert round(f.result[f.monitor.product.name][f'U{f.monitor.row}'], 2) == round(weekly_vol_change_rate, 2)
+
+
+    def test_set_monitor_price(self, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='茄子').first()
+        f.result[f.monitor.product.name] = {}
+
+        # Act
+        f.set_monitor_price()
+
+        # Assert
+        assert f.result[f.monitor.product.name][f'F{f.monitor.row}'] == f.monitor.price
+
+    @patch('apps.dailytrans.reports.dailyreport.QueryString', new_callable=MagicMock)
+    @patch('pandas.read_sql_query', new_callable=MagicMock)
+    @patch('apps.dailytrans.reports.dailyreport.Database.get_db_connection', return_value=MagicMock)
+    def test_set_same_month_of_last_year_value(
+            self,
+            conn,
+            mock_read_sql_query: MagicMock,
+            mock_query_string,
+            load_daily_tran_fixtures_of_eggplant_1m
+    ):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='茄子').first()
+        f.result[f.monitor.product.name] = {}
+        mock_read_sql_query.return_value = TestDailyTranHandler.get_daily_trans_df()
+        h = DailyTranHandler('', {})
+        df = h.df_with_group_by_date
+        expected_avg_price = (df.avg_price * df.sum_volume).sum() / df.sum_volume.sum()
+
+        # Act
+        f.set_same_month_of_last_year_value()
+
+        # Assert
+        assert round(f.result[f.monitor.product.name][f'G{f.monitor.row}'], 2) == round(expected_avg_price, 2)
+
+    def test_update_ram_data(self, load_daily_tran_fixtures_of_ram):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='羊', product__track_item=True).first()
+        f.result[f.monitor.product.name] = {}
+
+        # Act
+        f.update_ram_data()
+        expected_date_keys = {
+            f"""{f.col_mapping[f'{dt.date()}']}{f.monitor.row}"""
+            for dt in f.this_week_date
+        }
+        expected_values = {
+            'M117': 364.0,
+            'N117': 358.0,
+            'O117': '(11/07)',
+            'P117': '(11/07)',
+            'Q117': '(11/07)',
+            'R117': 367.0,
+            'S117': '(11/11)'
+        }
+
+        # Assert
+        assert expected_date_keys.issubset(set(f.result[f.monitor.product.name].keys()))
+        assert f.result[f.monitor.product.name] == expected_values
+
+    def test_update_cattle_data(self, load_daily_tran_fixtures_of_cattle):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='牛').first()
+        f.result[f.monitor.product.name] = {}
+
+        # Act
+        f.update_cattle_data()
+        expected_date_keys = {
+            f"""{f.col_mapping[f'{dt.date()}']}{f.monitor.row}"""
+            for dt in f.this_week_date
+        }
+
+        # Assert
+        assert expected_date_keys.issubset(set(f.result[f.monitor.product.name].keys()))
+        assert len(set(f.result[f.monitor.product.name].values())) == 2
+
+    def test_set_visible_rows(self, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='茄子').first()
+        expected_result = [f.monitor.row]
+        f.result[f.monitor.product.name] = {}
+        extra_monitors = ExtraItem.get_extra_monitors()
+
+        # Act
+        f.set_visible_rows()
+        f.monitor = extra_monitors[0]
+        f.set_visible_rows()
+        expected_result.append(f.monitor.row)
+
+
+        # Assert
+        assert f.excel_handler.visible_rows == expected_result
+
+    def test_remove_crop_desc(self, load_daily_tran_fixtures_of_eggplant):
+        # Arrange
+        f = self.get_daily_report_factory()
+        f.monitor = f.monitor_profile_qs.filter(product__name__icontains='紅豆').first()
+
+        # Act
+        f.set_product_desc()
+
+        # Assert
+        assert f.monitor.product.name not in f.excel_handler.dict_crop_desc
 
 
 @pytest.mark.django_db

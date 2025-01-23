@@ -1146,8 +1146,27 @@ class ExcelHandler:
 
 
 class SimplifyDailyReportFactory:
+    """
+    為了較好的可讀性與執行效能，將原先的日報表類別(DailyReportFactory)重構。
+    """
+
     def __init__(self, specify_day: datetime.datetime):
         self.specify_day = specify_day
+
+        """
+        代表整個報表的結果資料，格式為:
+        {
+            '青香蕉(內銷)': {
+              'M71': 60.8,
+              'N71': 62.0,
+              'O71': 62.4,
+              'P71': 62.8,
+              'Q71': 63.4,
+              'S71': 63.6
+              },
+              ...
+        }
+        """
         self.result: Dict[str, Dict[str, float]] = {}
         self.query = QueryString()
         self.excel_handler = ExcelHandler(self)
@@ -1168,6 +1187,26 @@ class SimplifyDailyReportFactory:
 
     @property
     def col_mapping(self):
+        """
+        生成對應日期的 Excel 欄位(column)，以方便後續對應列(row)
+
+        The dict will like this:
+        {'2024-12-11': 'M',
+         '2024-12-11_volume': 'X',
+         '2024-12-12': 'N',
+         '2024-12-12_volume': 'Y',
+         '2024-12-13': 'O',
+         '2024-12-13_volume': 'Z',
+         '2024-12-14': 'P',
+         '2024-12-14_volume': 'AA',
+         '2024-12-15': 'Q',
+         '2024-12-15_volume': 'AB',
+         '2024-12-16': 'R',
+         '2024-12-16_volume': 'AC',
+         '2024-12-17': 'S',
+         '2024-12-17_volume': 'AD'}
+        """
+
         if self.__col_mapping is None:
             self.__col_mapping = {}
 
@@ -1184,7 +1223,11 @@ class SimplifyDailyReportFactory:
         return self.__col_mapping
 
     @property
-    def this_week_start(self):
+    def this_week_start(self) -> datetime:
+        """
+        計算最近一週的起始日期
+        """
+
         return self.specify_day - datetime.timedelta(6)
 
     @property
@@ -1193,30 +1236,60 @@ class SimplifyDailyReportFactory:
 
     @property
     def last_week_start(self):
+        """
+        計算上週的起始日期
+        """
+
         return self.this_week_start - datetime.timedelta(7)
 
     @property
     def last_week_end(self):
+        """
+        計算上週的結束日期
+        """
+
         return self.this_week_end - datetime.timedelta(7)
 
     @property
-    def this_week_date(self):
+    def this_week_date(self) -> List[datetime]:
+        """
+        生成最近一週的日期區間
+        """
+
         return [self.this_week_start + datetime.timedelta(i) for i in range(7)]
 
     @property
     def last_week_date(self):
+        """
+        生成上週的日期區間
+        """
+
         return [self.this_week_start - datetime.timedelta(i) for i in range(8)]
 
     @property
-    def show_monitor(self):
+    def show_monitor(self) -> bool:
+        """
+        判斷該監控品項是否顯示在報表上，判斷條件為:
+            1. 月份是否在監控月份內
+            2. 是否為強制(always_display field)顯示
+        """
+
         return self.monitor.months.filter(name=f'{self.specify_day.month}月').exists() or self.monitor.always_display
 
     @property
-    def monitor_has_desc(self):
+    def monitor_has_desc(self) -> bool:
+        """
+        用於判斷監控品項是否有資料來源說明
+        """
+
         return self.monitor.product.name in self.excel_handler.dict_crop_desc
 
     @property
-    def watchlist(self):
+    def watchlist(self) -> Watchlist:
+        """
+        根據指定生成的報表日期，來獲取對應的監控清單
+        """
+
         if self.__watchlist is None:
             self.__watchlist = Watchlist.objects.filter(
                 start_date__year=self.specify_day.year,
@@ -1259,6 +1332,10 @@ class SimplifyDailyReportFactory:
 
     @staticmethod
     def get_simple_avg_price(daily_trans: List[DailyTran]) -> float:
+        """
+        計算指定日期區間的簡單平均價格
+        """
+
         return (
             sum(d.avg_price for d in daily_trans) / len(daily_trans)
             if daily_trans
@@ -1289,22 +1366,34 @@ class SimplifyDailyReportFactory:
         self.query.add_where_by_source_in(self.monitor)
         self.query.save()
 
-    def set_this_week_data(self): 
+    def set_this_week_data(self):
+        """
+        設定最近一週的平均價格和交易量資料
+        """
+
         self.result[self.monitor.product.name] = {}
         query = self.query.add_where_by_date_between(self.last_week_start, self.this_week_end).build()
         self.two_weeks_handler =  DailyTranHandler(query, self.query.dict_query)
 
+        # 迭代最近兩週的日交易資料，並設定最近一週的平均價格和交易量
         for named_tuple in self.two_weeks_handler.df_with_group_by_date.itertuples():
+            # 設定最近一週的平均價格
             if named_tuple.date >= self.this_week_start.date():
                 self.result[self.monitor.product.name].update(
                     {f"""{self.col_mapping[f"{named_tuple.date}"]}{self.monitor.row}""": named_tuple.avg_price}
                 )
+
+            # 設定最近一週的交易量
             if  self.two_weeks_handler.has_volume and named_tuple.date >= self.this_week_start.date():
                 self.result[self.monitor.product.name].update(
                     {f"""{self.col_mapping[f"{named_tuple.date}_volume"]}{self.monitor.row}""": named_tuple.sum_volume}
                 )
 
     def set_avg_price_values(self):
+        """
+        設定前一週、最近一週的平均價格和與前一週比較的百分比
+        """
+
         last_week_avg_price = self.two_weeks_handler.get_avg_price(
             self.last_week_start.date(), self.last_week_end.date()
         )
@@ -1312,6 +1401,7 @@ class SimplifyDailyReportFactory:
             self.this_week_start.date(), self.this_week_end.date()
         )
 
+        # '與前一週比較(%)' 欄位(L)
         if last_week_avg_price > 0:
             self.result[self.monitor.product.name].update(
                 {f'L{self.monitor.row}': (this_week_avg_price - last_week_avg_price) / last_week_avg_price * 100}
@@ -1323,6 +1413,10 @@ class SimplifyDailyReportFactory:
         )
 
     def set_volume_values(self):
+        """
+        設定前一週、最近一週的平均交易量和與前一週比較的百分比
+        """
+
         if self.two_weeks_handler.has_volume:
             last_week_avg_volume = self.two_weeks_handler.get_avg_volume(
                 self.last_week_start.date(), self.last_week_end.date()
@@ -1331,43 +1425,74 @@ class SimplifyDailyReportFactory:
                 self.this_week_start.date(), self.this_week_end.date()
             )
 
-            # T 欄為當週交易量欄位
+            # 當週交易量欄位(T)
             self.result[self.monitor.product.name].update({f'T{self.monitor.row}': this_week_avg_volume})
 
             if last_week_avg_volume > 0:
                 self.result[self.monitor.product.name].update(
                     {
-                        # U 欄為 '與前一週比較(%)' 交易量欄位
+                        # '與前一週比較(%)' 交易量欄位(U)
                         f'U{self.monitor.row}': 
                             (this_week_avg_volume - last_week_avg_volume) / last_week_avg_volume * 100
                     }
                 )
 
     def set_monitor_price(self):
+        """
+        設定監控價格欄位
+        """
+
+        # 若有監控價格，則設定監控價格欄位(F)
         if self.monitor.price:
             self.result[self.monitor.product.name].update({f'F{self.monitor.row}': self.monitor.price})
 
     def set_same_month_of_last_year_value(self):
+        """
+        設定與去年同月份的平均價格
+        """
+
         query = self.query.load().add_where_by_last_year_and_month(self.specify_day).build()
         handler = DailyTranHandler(query, self.query.dict_query)
         last_year_avg_price = handler.get_avg_price()
 
+        # N-1 年 M 月平均價格欄位(G)
         if last_year_avg_price > 0:
             self.result[self.monitor.product.name].update({f'G{self.monitor.row}': last_year_avg_price})
 
     def update_ram_data(self):
+        """
+        更新羊資料格式與價格，更新後的格式大概如下:
+        {
+            'M117': 364.0,
+            'N117': 358.0,
+            'O117': '(11/07)',
+            'P117': '(11/07)',
+            'Q117': '(11/07)',
+            'R117': 367.0,
+            'S117': '(11/11)'
+        }
+        """
+
         this_week_date = self.this_week_date
         daily_trans = DailyTran.objects.filter_by_date_lte(
             days=this_week_date, products=self.monitor.product_list(), sources=self.monitor.sources()
         )
 
         for i, d in enumerate(daily_trans):
+            # 依索引取得對應位置的日期
             date = this_week_date[i].date()
             key = f"{self.col_mapping[f'{date}']}{self.monitor.row}"
+
+            # 若是日交易第一筆資料或是交易日期與最近一週日期相同，則設定為該交易的平均價，否則則將值設定為日期
             value = d.avg_price if i == 0 or d.date == date else d.date.strftime('(%m/%d)')
             self.result[self.monitor.product.name].update({key: value})
 
     def update_cattle_data(self):
+        """
+        更新牛資價格，因牛資料比較特殊，每週只會有一個價格，e.g. 11/4 -> 128, 11/11 -> 130
+        每週的第一個價格，將代表整週都是此價格
+        """
+
         this_week_date = self.this_week_date
         last_week_date = self.last_week_date
         this_week_trans = DailyTran.objects.filter_by_date_lte(this_week_date, self.monitor.product_list())
@@ -1376,16 +1501,21 @@ class SimplifyDailyReportFactory:
         last_week_avg_price = self.get_simple_avg_price(last_week_trans)
 
         if this_week_avg_price:
+            # 設定最近一週每一日平均價格
             for i, d in enumerate(this_week_trans):
                 self.result[self.monitor.product.name].update(
                     {f"{self.col_mapping[f'{this_week_date[i].date()}']}{self.monitor.row}": d.avg_price}
                 )
+
+            # 設定最近一週平均價格(H)
             self.result[self.monitor.product.name].update({f'H{self.monitor.row}': this_week_avg_price})
 
         if last_week_avg_price:
+            # 設定前一週平均價格(W)
             self.result[self.monitor.product.name].update({f'W{self.monitor.row}': last_week_avg_price})
 
         if this_week_avg_price and last_week_avg_price:
+            # 設定與前一週比較的百分比(L)
             self.result[self.monitor.product.name].update(
                 {
                     f'L{self.monitor.row}': (this_week_avg_price - last_week_avg_price) / last_week_avg_price * 100
@@ -1393,10 +1523,18 @@ class SimplifyDailyReportFactory:
             )
 
     def set_visible_rows(self):
+        """
+        設定該監控品項是否顯示在報表上，其中 row 代表 Excel 的 row index
+        """
+
         if self.monitor.id is None or self.show_monitor:
             self.excel_handler.visible_rows = self.monitor.row
             
     def set_product_desc(self):
+        """
+        設定該監控品項的資料來源說明，若該品項有來源說明並且不顯示在報表上，則移除該品項的資料來源說明。
+        """
+
         if self.monitor.id and self.monitor_has_desc and not self.show_monitor:
             self.excel_handler.remove_crop_desc(self.monitor.product.name)
 

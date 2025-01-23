@@ -233,7 +233,7 @@ class Last5YearsReport(LoginRequiredMixin, TemplateView):
         result = {}
 
         # 品項
-        qs = Last5YearsItems.objects.filter(enable=True).order_by('id')
+        qs = Last5YearsItems.objects.filter(enable=True).order_by('sort_value')
 
         # because qs has duplicate items, so we need to remove duplicate items
         items_list = []

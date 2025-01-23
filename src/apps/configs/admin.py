@@ -175,8 +175,6 @@ class Last5YearsItemsModelForm(ModelForm):
                  label_suffix=None, empty_permitted=False, instance=None):
         super().__init__(data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted, instance)
 
-        # forcing add the `id` field can be edited
-        self.fields['id'] = forms.IntegerField(widget=forms.TextInput())
         self.fields['product_id'].choices = self.product_field_choices
         self.fields['source'].choices = self.source_field_choices
 
@@ -193,21 +191,11 @@ class Last5YearsItemsModelForm(ModelForm):
         return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_sources]
 
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.id = self.cleaned_data['id']
-
-        if commit:
-            instance.save()
-
-        return instance
-
-
 class Last5YearsItemsAdmin(admin.ModelAdmin):
     form = Last5YearsItemsModelForm
-    list_display = ['id', 'name', 'enable', 'update_time', 'create_time']
-    list_editable = ['name', 'enable']
-    fields = ['id', 'product_id', 'source', 'name', 'enable']
+    list_display = ['id', 'name', 'enable', 'sort_value', 'update_time', 'create_time']
+    list_editable = ['name', 'enable', 'sort_value']
+    fields = ['product_id', 'source', 'name', 'enable', 'sort_value']
 
     search_fields = (
         'id',

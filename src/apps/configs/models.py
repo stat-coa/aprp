@@ -507,6 +507,7 @@ class Last5YearsItems(Model):
     enable = BooleanField(default=True, verbose_name=_('Enabled'))
     product_id = ManyToManyField('configs.AbstractProduct', verbose_name=_('Product_id'))
     source = ManyToManyField('configs.Source', verbose_name=_('Source'))
+    sort_value = IntegerField(blank=True, null=True, verbose_name=_('Sort Value'))
     update_time = DateTimeField(auto_now=True, null=True, blank=True, verbose_name=_('Updated'))
     create_time = DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name=_('Created'))
 

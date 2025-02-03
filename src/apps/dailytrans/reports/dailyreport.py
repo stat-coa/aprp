@@ -1251,7 +1251,7 @@ class SimplifyDailyReportFactory:
         return self.this_week_end - datetime.timedelta(7)
 
     @property
-    def this_week_date(self) -> List[datetime]:
+    def this_week_date(self) -> List[datetime.timedelta]:
         """
         生成最近一週的日期區間
         """
@@ -1259,7 +1259,7 @@ class SimplifyDailyReportFactory:
         return [self.this_week_start + datetime.timedelta(i) for i in range(7)]
 
     @property
-    def last_week_date(self):
+    def last_week_date(self) -> List[datetime.timedelta]:
         """
         生成上週的日期區間
         """

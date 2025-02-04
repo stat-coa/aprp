@@ -1,9 +1,19 @@
-import pandas as pd
 import datetime
 import json
-from .utils import date_transfer
-from .abstract import AbstractApi
+import time
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional, List, Dict
+from urllib.parse import urlparse, parse_qs
+
+import pandas as pd
+from bs4 import BeautifulSoup
+from bs4.element import ResultSet
+from requests import Response, post
+
 from apps.dailytrans.models import DailyTran
+from .abstract import AbstractApi
+from .utils import date_transfer
 
 
 class Api(AbstractApi):
@@ -189,3 +199,379 @@ class Api(AbstractApi):
             date=value['date']
         ) for product in products]
         DailyTran.objects.bulk_create(new_trans)
+
+
+class HTMLParser:
+    """
+    此 class 用於解析 HTML 內容，並取出需要的資料所設計。(使用 BeautifulSoup4)
+    """
+
+    TABLE_ID = 'ltable'
+
+    def __init__(self, response: Response, api: 'ScrapperApi'):
+        """
+        Args:
+            response: 請求後的 response 物件
+            api: 指向回 `ScrapperApi` 物件參照，方便取得相關資訊
+        """
+
+        self.__data: List[OrderedDict] = []
+
+        self.response = response
+        self.soup = BeautifulSoup(response.text, 'html.parser')
+        self.api = api
+
+    @property
+    def data(self):
+        return self.__data
+
+    @data.setter
+    def data(self, value: Optional[OrderedDict]):
+        if value:
+            self.__data.append(value)
+
+    @property
+    def params(self)-> Dict[str, List[str]]:
+        return parse_qs(urlparse(self.response.request.url).query)
+
+    @property
+    def source_code(self) -> str:
+        return self.params.get('mid')[0]
+
+    @property
+    def table(self):
+        """
+        目標 table 結構大致如下:
+
+        <table id="ltable" class="bk_white">
+          <thead>...</thead>
+          <tbody>...</tbody>
+        </table>
+        """
+
+        return self.soup.find('table', {'id': self.TABLE_ID})
+
+    @property
+    def tbody(self):
+        """
+        目標 tbody 結構大致如下:
+
+        <table id="ltable" class="bk_white">
+          <thead>...</thead>
+
+          主要抓取目標
+          <tbody>
+            <tr>...</tr>
+            <tr>...</tr>
+          </tbody>
+        </table>
+        """
+
+        return self.table.find('tbody') if self.table else None
+
+    @property
+    def all_th(self) -> Optional[ResultSet]:
+        """
+        目標 thead 結構大致如下，主要用來抓取欄位名稱:
+
+        <thead>
+            <tr>
+              <th>品種<br>代碼</th>
+              <th>魚貨名稱</th>
+              <th>上價<br>(元/公斤)</th>
+              <th>中價<br>(元/公斤)</th>
+              <th>下價<br>(元/公斤)</th>
+              <th>交易量<br>(公斤)</th>
+              <th>交易量漲跌幅+(-)%</th>
+              <th>平均價<br>(元/公斤)</th>
+              <th>平均價漲跌幅+(-)%</th>
+            </tr>
+        </thead>
+        """
+
+        return self.table.find_all('th') if self.table else None
+
+    @property
+    def all_tr(self) -> Optional[ResultSet]:
+        """
+        目標 tr 結構大致如下，tr 內容為每一筆資料:
+
+        <table id="ltable" class="bk_white">
+          <thead>...</thead>
+          <tbody>
+
+            主要抓取目標
+            <tr>...</tr>
+            <tr>...</tr>
+          </tbody>
+        </table>
+        """
+
+        return self.tbody.find_all('tr') if self.tbody else None
+    
+    @property
+    def all_td_list(self) -> Optional[List[ResultSet]]:
+        """
+        目標 td 結構大致如下:
+
+        <table id="ltable" class="bk_white">
+          <thead>...</thead>
+          <tbody>
+            <tr>
+              主要抓取目標(所有 td)
+              <td>1071</td>
+              <td>金目鱸</td>
+              <td>144.2</td>
+              <td>101.7</td>
+              <td>77.5</td>
+              <td>3,969.3</td>
+              <td>	</td>
+              <td>105.4</td>
+              <td> </td>
+            </tr>
+            <tr>...</tr>
+          </tbody>
+        </table>
+        """
+
+        return [tr.find_all('td') for tr in self.all_tr] if self.all_tr else None
+
+    @property
+    def headers(self) -> List[str]:
+        """
+        將所有 <th> 標籤的文字(欄位名稱)取出，並去除換行符號
+        """
+
+        return [th.text.replace('\n', '') for th in self.all_th] if self.all_th else []
+
+    @staticmethod
+    def convert_to_float(value: Optional[str]) -> Optional[float]:
+        return float(value.replace(',', '').strip()) if value else None
+
+    def _extract_relevant_data(self, row_data: dict) -> Optional[OrderedDict]:
+        """
+        只抓取需要的欄位資料，並轉換成 dict 格式
+
+        Args:
+            row_data: 代表每一筆資料的 dict(已從 HTML 中取出的 raw data)
+        """
+
+        try:
+            return OrderedDict({
+                "交易日期": self.api.date_str,
+                "品種代碼": row_data.get("品種代碼"),
+                "魚貨名稱": row_data.get("魚貨名稱"),
+                "市場名稱": self.api.SOURCES.get(self.source_code),
+                "上價": self.convert_to_float(row_data.get("上價(元/公斤)")),
+                "中價": self.convert_to_float(row_data.get("中價(元/公斤)")),
+                "下價": self.convert_to_float(row_data.get("下價(元/公斤)")),
+                "交易量": self.convert_to_float(row_data.get("交易量(公斤)")),
+                "平均價": self.convert_to_float(row_data.get("平均價(元/公斤)")),
+            })
+        except (ValueError, TypeError):
+            return None
+
+    def parse_table(self) -> Optional[List[OrderedDict]]:
+        """
+        將指定的 HTML table 解析後，取出需要的資料
+        """
+
+        # 若沒有找到資料則直接返回
+        if not self.all_tr:
+            self.api.LOGGER.warning(
+                f'No Table Found, source: {self.api.SOURCES.get(self.source_code)}', extra=self.api.LOGGER_EXTRA
+            )
+
+            return
+
+        for td_list in self.all_td_list:
+            # 組成格式為 {header: value} 的 dict
+            # e.g. {'品種代碼': '1071', '魚貨名稱': '金目鱸', '上價': '144.2', ...}
+            row_data = {
+                header: td_list[i].text.strip().replace('\xa0', '')
+                for i, header in enumerate(self.headers)
+            }
+            self.data = self._extract_relevant_data(row_data)
+
+        return self.data
+
+
+class ScrapperApi(Api):
+    """
+    `Api` class 的爬蟲版本，直接爬取 '漁產批發市場交易行情站' 網頁上的資料
+    因 API 較久以前的資料有異動時不會更新(行情站上的資料最正確)
+    """
+
+    MAX_RETRY = 3
+    SLEEP_TIME = 3
+    URL = 'https://efish.fa.gov.tw/efish/statistics/daysinglemarketmultifish.htm'
+    HEADERS = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko)'
+                      'Chrome/132.0.0.0 Safari/537.36'
+    }
+
+    # 只抓取消費地市場
+    SOURCES = OrderedDict({
+        'F109': '台北',
+        'F241': '三重',
+        'F300': '新竹',
+        'F330': '桃園',
+        'F360': '苗栗',
+        'F400': '台中',
+        'F500': '彰化',
+        'F513': '埔心',
+        'F600': '嘉義',
+        'F630': '斗南',
+        'F722': '佳里',
+        'F730': '新營',
+        'F820': '岡山',
+    })
+
+    def __init__(self, model, config_code, type_id, logger_type_code=None):
+        super(ScrapperApi, self).__init__(
+            model=model, config_code=config_code, type_id=type_id, logger_type_code=logger_type_code
+        )
+
+        self.__query_date: Optional[datetime.date] = None
+        self.__df_list: List[pd.DataFrame] = []
+
+    @property
+    def query_date(self) -> Optional[datetime.date]:
+        return self.__query_date
+
+    @query_date.setter
+    def query_date(self, value: datetime.date):
+        self.__query_date = value
+
+    @property
+    def df_result(self) -> pd.DataFrame:
+        return (
+            pd.concat(self.__df_list).query(f'品種代碼 in {list(self.target_items)}')
+            if self.__df_list
+            else pd.DataFrame()
+        )
+
+    @df_result.setter
+    def df_result(self, value: Optional[List[OrderedDict]]):
+        if value:
+            self.__df_list.append(pd.DataFrame(value))
+
+    @property
+    def request_date_str(self) -> str:
+        dt = self.__query_date
+
+        return f'{dt.year - 1911}.{dt.month}.{dt.day}'
+
+    @property
+    def date_str(self) -> str:
+        dt = self.__query_date
+
+        return f'{self.roc_year}{dt.month:02d}{dt.day:02d}'
+
+    @property
+    def roc_year(self) -> str:
+        return f'{self.__query_date.year - 1911}'
+
+    @property
+    def month(self) -> str:
+        return f'{self.__query_date.month}'
+
+    @property
+    def day(self) -> str:
+        return f'{self.__query_date.day}'
+
+    @property
+    def params_list(self) -> List[dict]:
+        """ 用於發送 POST 請求的參數列表 """
+
+        return [
+            {
+                "dateStr": self.request_date_str,
+                "calendarType": "tw",
+                "year": self.roc_year,
+                "month": self.month,
+                "day": self.day,
+                "mid": key,
+                "numbers": "999",
+                "orderby": "w",
+            }
+            for key in self.SOURCES.keys()
+        ]
+
+    @property
+    def headers_list(self) -> List[dict]:
+        return [
+            {
+                **self.HEADERS,
+            }
+            for _ in self.SOURCES.keys()
+        ]
+
+    @property
+    def urls_list(self) -> List[str]:
+        return [
+            self.URL
+            for _ in self.SOURCES.keys()
+        ]
+
+    def _make_request(self, url, params, headers) -> Response:
+        """
+        發送 POST 請求，並回傳 response 物件，若發生錯誤則嘗試重新連線
+        """
+
+        retry_count = 0
+
+        while retry_count < self.MAX_RETRY:
+            try:
+                resp = post(url, params=params, headers=headers)
+                self.LOGGER_EXTRA['request_url'] = resp.request.url
+
+                if resp.status_code != 200:
+                    retry_count += 1
+
+                    self.LOGGER.warning(f'Connection Refused, Retry {retry_count} Time', extra=self.LOGGER_EXTRA)
+                    time.sleep(self.SLEEP_TIME)
+
+                    continue
+
+                return resp
+            except Exception as e:
+                self.LOGGER.exception(f'exception: {e}', extra=self.LOGGER_EXTRA)
+
+                return Response()
+
+    def _convert_to_dataframe(self, responses: List[Response]) -> pd.DataFrame:
+        for resp in responses:
+            parser = HTMLParser(response=resp, api=self)
+
+            if resp.status_code == 200:
+                self.df_result = parser.parse_table()
+            else:
+                self.LOGGER.warning(
+                    f'Connection Refused, Status Code: {resp.status_code}, '
+                    f'source: {self.SOURCES.get(parser.source_code)}', extra=self.LOGGER_EXTRA
+                )
+
+        return self.df_result
+
+    def requests(
+            self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
+    ) -> List[Response]:
+        if start_date is None and end_date is None:
+            raise ValueError('start_date or end_date must be set')
+
+        self.query_date = start_date or end_date
+
+        # 為增加效率，使用 ThreadPoolExecutor 進行多執行緒請求
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            return list(executor.map(self._make_request, self.urls_list, self.params_list, self.headers_list))
+
+    def loads(self, responses: List[Response]):
+        df = self._convert_to_dataframe(responses)
+
+        try:
+            if not df.empty:
+                self._access_data_from_api(df)
+        except Exception as e:
+            self.LOGGER.exception(f'exception: {e}', extra=self.LOGGER_EXTRA)

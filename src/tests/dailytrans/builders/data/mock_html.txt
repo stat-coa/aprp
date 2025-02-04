@@ -1,0 +1,2245 @@
+<body>
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/efish/css/base/header.css">
+
+<div class="topnav" id="myTopnav">
+	<a href="#" class="active" style="padding: 0px;">
+		<img src="/efish/images/logo.png" align="absmiddle" style="height: 60px;">
+	</a>
+	<a href="#" onclick="openPage('/efish','_self')">首頁</a>
+	<a href="#" onclick="openPage('/efish/common/bulletinlist.htm','_self')">最新消息</a>
+	<a href="#" onclick="openPage('/efish/statistics/reportmap.htm','_self')">行情統計查詢</a>
+	<a href="#" onclick="openPage('/efish/common/marketrestdayquery.htm?year=&amp;month=&amp;marketType=','_self')">休市日查詢</a>
+	<a href="#" onclick="window.open('/efish/geo-calendar.html','geocalendar','width=450,height=500')">萬年曆查詢</a>
+	<a href="#" onclick="openPage('/efish/common/atlaslist.htm','_self')">魚品種代碼表</a>
+	<a href="#" onclick="openPage('/efish/common/contactlist.htm','_self')">通報站通訊錄</a>
+	<a href="#" onclick="openPage('/efish/avisologin.htm','_self')">通報員專區</a>
+	<a href="#" onclick="openPage('/efish/adminlogin.htm','_self')">管理員專區</a>
+	<a href="#" onclick="openPage('/efish/common/websitemap.htm','_self')">網站地圖</a>
+	<a href="javascript:void(0);" class="icon" onclick="myTopnavTrigger()">
+		<img src="/efish/images/menu.png" align="absmiddle">
+	</a>
+</div>
+
+<script>
+	function myTopnavTrigger() {
+		var x = document.getElementById("myTopnav");
+		if (x.className === "topnav") {
+			x.className += " responsive";
+		} else {
+			x.className = "topnav";
+		}
+	}
+</script>
+
+	<div id="content-body">
+		<div style="max-width: 1200px;margin:auto;">
+	    	<p style="padding-left: 20px;color: #626262;width: 90%;margin: auto;">
+		     	<img src="/efish/new/images/where.png" align="absmiddle" style="height: 30px;">&nbsp;
+		  		行情統計查詢 / 日行情資訊 / 魚品種行情(單日) / 單市場多品種行情
+			</p>
+			<hr style="width: 90%;">
+			<div style="padding-left: 20px;color: #626262;width: 90%;margin: auto; font-size: 28px;">
+				單市場多品種行情
+			</div>
+    		<div class="contentPg">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript">
+    function changeDate(type, field){
+    	if ($("input[name=calendarType]:checked").val() == 'luna'){
+    		if(type == 'm')
+    			getLunarMonths(field);
+    		else
+    			getLunarDays(field);
+    	} else {
+    		if(type == 'm'){
+    			getTWMonths(field);
+    		}
+    		else{
+    			if ($("input[name=dType]:checked").val() == 'sw'){
+	    			getWeeks(field);
+    			}else{
+	    			getTWDays(field);
+    			}
+    		}
+    	}
+    }
+
+    function setField(field, srcfield, targetfield) {
+    	if($('#'+field+srcfield) != null && $('#'+field+srcfield).val() != '' && $('#'+field+targetfield) != null){
+    		$('#'+field+targetfield).val($('#'+field+srcfield).val());
+    	}
+    }
+
+    function setdate(field) {
+    	if($('#dateStr'+field) != null || $('#dateStr'+field).val() != ''){
+        	$('#dateStr'+field).val($('#year'+field).val()+'.'+$('#month'+field).val()+'.'+$('#day'+field).val());
+        	if($("input[name=calendarType]") != null){
+            	if ($("input[name=calendarType]:checked").val() == 'luna'){
+            		displayTWDate(field);
+            	} else {
+            		$('#lunardate'+field).html("&nbsp;");
+            	}
+        	}
+    	}
+    }
+
+    function displayTWDate(field) {
+		$.ajax({
+			url: '/efish/gettwdate.htm',
+			dataType: "text",
+			data: {dateStr: encodeURIComponent($('#dateStr'+field).val())},
+			success: function(data) {
+
+				if(data.length > 0){
+					$('#lunardate'+field).html('民國'+decodeURIComponent(data.replace(/\+/g,  " ")));
+				} else {
+					$('#lunardate'+field).html("&nbsp;");
+				}
+			}
+		});
+    }
+
+    function getTWYears(field) {
+    	$('#lunardate'+field).html("&nbsp;");
+		$.ajax({
+			url: '/efish/svc/gettwyears',
+			dataType: "json",
+			success: function(map) {
+				if(map != null){
+					$.each(map, function(key, value) {
+						if(key == "years"){
+							$('#year'+field).empty();
+							$.each(value, function(i, val) {
+								$("#year"+field).append('<option>'+val+'</option>');
+							});
+						}
+						if(key == "months"){
+							$('#month'+field).empty();
+							$.each(value, function(i, val) {
+								$("#month"+field).append('<option>'+val+'</option>');
+							});
+						}
+						if(key == "days"){
+							$('#day'+field).empty();
+							$.each(value, function(i, val) {
+								$("#day"+field).append('<option>'+val+'</option>');
+							});
+						}
+					});
+					convertDate(field);
+			    	setdate(field);
+				}
+			}
+		});
+    }
+
+    function getTWMonths(field) {
+    	var curryear = $('#year'+field).val();
+		$.ajax({
+			url: '/efish/svc/gettwmonths',
+			dataType: "json",
+			data: {year: $('#year'+field).val()},
+			success: function(map) {
+				if(map != null){
+					$.each(map, function(key, value) {
+						if(key == "months"){
+							$('#month'+field).empty();
+							$.each(value, function(i, val) {
+								$("#month"+field).append('<option>'+val+'</option>');
+							});
+						}
+						if(key == "days"){
+							$('#day'+field).empty();
+							$.each(value, function(i, val) {
+								$("#day"+field).append('<option>'+val+'</option>');
+							});
+						}
+					});
+					$('#day'+field).val('1');
+					$('#year'+field).val(curryear);
+				}
+		    	setdate(field);
+			}
+		});
+    }
+
+    function getWeeks(field) {
+    	var curryear = $('#year'+field).val();
+    	var currmonth = $('#month'+field).val();
+		$.ajax({
+			url: '/efish/svc/getweeks',
+			dataType: "json",
+			data: {year: $('#year'+field).val(), month: $("#month"+field).val()},
+			success: function(value) {
+				if(value != null){
+					$('#week'+field).empty();
+					$.each(value, function(i, val) {
+						$("#week"+field).append('<option>'+val+'</option>');
+					});
+					$('#year'+field).val(curryear);
+					$('#month'+field).val(currmonth);
+					$('#week'+field).val('1');
+				}
+		    	setdate(field);
+			}
+		});
+    }
+
+    function getTWDays(field) {
+    	var curryear = $('#year'+field).val();
+    	var currmonth = $('#month'+field).val();
+		$.ajax({
+			url: '/efish/svc/gettwdays',
+			dataType: "json",
+			data: {year: $('#year'+field).val(), month: $("#month"+field).val()},
+			success: function(map) {
+				if(map != null){
+					$.each(map, function(key, value) {
+						if(key == "days"){
+							$('#day'+field).empty();
+							$.each(value, function(i, val) {
+								$("#day"+field).append('<option>'+val+'</option>');
+							});
+						}
+					});
+					$('#year'+field).val(curryear);
+					$('#month'+field).val(currmonth);
+					$('#day'+field).val('1');
+				}
+		    	setdate(field);
+			}
+		});
+    }
+
+    function getLunarYears(field) {
+    	setdate(field);
+		$.ajax({
+			url: '/efish/svc/getlunaryears',
+			dataType: "json",
+			success: function(map) {
+				if(map != null){
+					$.each(map, function(key, value) {
+						if(key == "years"){
+							$('#year'+field).empty();
+							$.each(value, function(i, val) {
+								$("#year"+field).append('<option>'+val+'</option>');
+							});
+						}
+						if(key == "months"){
+							$('#month'+field).empty();
+							$.each(value, function(i, val) {
+								$("#month"+field).append('<option>'+val+'</option>');
+							});
+						}
+						if(key == "days"){
+							$('#day'+field).empty();
+							$.each(value, function(i, val) {
+								$("#day"+field).append('<option>'+val+'</option>');
+							});
+						}
+					});
+					convertDate(field);
+				}
+			}
+		});
+    }
+
+    function getLunarMonths(field) {
+    	setdate(field);
+    	var curryear = $('#year'+field).val();
+		$.ajax({
+			url: '/efish/svc/getlunarmonths',
+			dataType: "json",
+			data: {year: encodeURIComponent($('#year'+field).val())},
+			success: function(map) {
+				if(map != null){
+					$.each(map, function(key, value) {
+						if(key == "months"){
+							$('#month'+field).empty();
+							$.each(value, function(i, val) {
+								$("#month"+field).append('<option>'+val+'</option>');
+							});
+						}
+						if(key == "days"){
+							$('#day'+field).empty();
+							$.each(value, function(i, val) {
+								$("#day"+field).append('<option>'+val+'</option>');
+							});
+						}
+					});
+					$('#year'+field).val(curryear);
+				}
+			}
+		});
+    }
+
+    function getLunarDays(field) {
+    	setdate(field);
+    	var curryear = $('#year'+field).val();
+    	var currmonth = $('#month'+field).val();
+		$.ajax({
+			url: '/efish/svc/getlunardays',
+			dataType: "json",
+			data: {year: encodeURIComponent($('#year'+field).val()), month: encodeURIComponent($('#month'+field).val())},
+			success: function(map) {
+				if(map != null){
+					$.each(map, function(key, value) {
+						if(key == "days"){
+							$('#day'+field).empty();
+							$.each(value, function(i, val) {
+								$("#day"+field).append('<option>'+val+'</option>');
+							});
+						}
+					});
+					$('#year'+field).val(curryear);
+					$('#month'+field).val(currmonth);
+				}
+			}
+		});
+    }
+
+    function convertDate(field) {
+		$.ajax({
+			url: '/efish/convertdate.htm',
+			dataType: "text",
+			data: {d: encodeURIComponent($('#dateStr'+field).val()), ct: $("input[name='calendarType']:checked").val()},
+			success: function(data) {
+				if(data != null){
+					var parts = null;
+					if($("input[name='calendarType']:checked").val() == 'luna'){
+						parts = decodeURIComponent(data.replace(/\+/g,  " ")).split("-");
+					} else {
+						parts = data.split(".");
+					}
+					$("#year"+field).children().each(function(){
+					    if ($(this).text()==parts[0]){
+					        $(this).attr("selected","true");
+					    }
+					});
+					$("#month"+field).children().each(function(){
+					    if ($(this).text()==parts[1]){
+					        $(this).attr("selected","true");
+					    }
+					});
+					$("#day"+field).children().each(function(){
+					    if ($(this).text()==parts[2]){
+					        $(this).attr("selected","true");
+					    }
+					});
+				}
+			}
+		});
+    }
+
+</script>
+<script type="text/javascript">
+	$(function() {
+		$("#ltable").tablesorter({
+			headers: {
+				1: {sorter: false},
+				5: {sorter: 'commaDigit'}
+			}
+		});
+	});
+
+    function send() {
+    	if($('#numbers').val() == ''){
+    		alert("\u8acb\u8f38\u5165\u54c1\u7a2e\u6578\u76ee!");
+    		return false;
+    	} else {
+        	setdate('');
+        	$('#qform').attr('action', '/efish/statistics/daysinglemarketmultifish.htm');
+        	$('#qform').attr('target', "_self");
+            $('#qform').submit(blockGUI('qform'));
+    	}
+    }
+    function dwnDoc() {
+    	if($('#numbers').val() == ''){
+    		alert("\u8acb\u8f38\u5165\u54c1\u7a2e\u6578\u76ee!");
+    		return false;
+    	} else {
+        	setdate('');
+        	$('#qform').attr('action', '/efish/statistics/rpt/daysinglemarketmultifish.htm');
+        	$('#qform').attr('target', "_blank");
+            $('#qform').submit();
+    	}
+    }
+</script>
+
+
+
+<div class="statistic-title">
+	<span>單市場多品種行情（單日)</span>
+</div>
+<form id="qform" method="post" action="daysinglemarketmultifish.htm">
+<input type="hidden" name="dateStr" id="dateStr">
+<!-- ***************************************************** -->
+<table class="table-form">
+	<tbody>
+		<tr>
+			<th>查詢日期</th>
+			<td>
+				<input type="radio" name="calendarType" value="tw" checked="" onclick="getTWYears('')">民國
+	        	&nbsp;
+	        	<input type="radio" name="calendarType" value="luna" onclick="getLunarYears('')">農曆
+	          	&nbsp;
+	          	<select name="year" id="year" onchange="changeDate('m', '');setdate('');">
+
+	       				<option value="114" selected="">114</option>
+
+	       				<option value="113">113</option>
+
+	       				<option value="112">112</option>
+
+	       				<option value="111">111</option>
+
+	       				<option value="110">110</option>
+
+	       				<option value="109">109</option>
+
+	       				<option value="108">108</option>
+
+	       				<option value="107">107</option>
+
+	       				<option value="106">106</option>
+
+	       				<option value="105">105</option>
+
+	       				<option value="104">104</option>
+
+	       				<option value="103">103</option>
+
+	       				<option value="102">102</option>
+
+	       				<option value="101">101</option>
+
+	       				<option value="100">100</option>
+
+	       				<option value="99">99</option>
+
+	       				<option value="98">98</option>
+
+	       				<option value="97">97</option>
+
+	       				<option value="96">96</option>
+
+	       				<option value="95">95</option>
+
+	       				<option value="94">94</option>
+
+	       				<option value="93">93</option>
+
+	       				<option value="92">92</option>
+
+	       				<option value="91">91</option>
+
+	       				<option value="90">90</option>
+
+	       				<option value="89">89</option>
+
+	          	</select>
+	          	年
+	          	<select name="month" id="month" onchange="changeDate('d', '');setdate('');">
+
+	       				<option value="1">1</option>
+
+	       				<option value="2" selected="">2</option>
+
+	       				<option value="3">3</option>
+
+	       				<option value="4">4</option>
+
+	       				<option value="5">5</option>
+
+	       				<option value="6">6</option>
+
+	       				<option value="7">7</option>
+
+	       				<option value="8">8</option>
+
+	       				<option value="9">9</option>
+
+	       				<option value="10">10</option>
+
+	       				<option value="11">11</option>
+
+	       				<option value="12">12</option>
+
+	          	</select>
+	          	月
+	          	<select name="day" id="day" onchange="setdate('')">
+
+	       				<option value="1">1</option>
+
+	       				<option value="2">2</option>
+
+	       				<option value="3" selected="">3</option>
+
+	       				<option value="4">4</option>
+
+	       				<option value="5">5</option>
+
+	       				<option value="6">6</option>
+
+	       				<option value="7">7</option>
+
+	       				<option value="8">8</option>
+
+	       				<option value="9">9</option>
+
+	       				<option value="10">10</option>
+
+	       				<option value="11">11</option>
+
+	       				<option value="12">12</option>
+
+	       				<option value="13">13</option>
+
+	       				<option value="14">14</option>
+
+	       				<option value="15">15</option>
+
+	       				<option value="16">16</option>
+
+	       				<option value="17">17</option>
+
+	       				<option value="18">18</option>
+
+	       				<option value="19">19</option>
+
+	       				<option value="20">20</option>
+
+	       				<option value="21">21</option>
+
+	       				<option value="22">22</option>
+
+	       				<option value="23">23</option>
+
+	       				<option value="24">24</option>
+
+	       				<option value="25">25</option>
+
+	       				<option value="26">26</option>
+
+	       				<option value="27">27</option>
+
+	       				<option value="28">28</option>
+
+	          	</select>
+	          	日&nbsp;&nbsp;<div id="lunardate" style="display: inline">民國114年2月3日</div>
+			</td>
+		</tr>
+		<tr>
+			<th>市場</th>
+			<td>
+				<select size="1" name="mid">
+
+	                       <option value="F109" selected="">台北      </option>
+
+	                       <option value="F200">基隆      </option>
+
+	                       <option value="F241">三重      </option>
+
+	                       <option value="F261">頭城      </option>
+
+	                       <option value="F270">蘇澳      </option>
+
+	                       <option value="F300">新竹      </option>
+
+	                       <option value="F330">桃園      </option>
+
+	                       <option value="F360">苗栗      </option>
+
+	                       <option value="F400">台中      </option>
+
+	                       <option value="F500">彰化      </option>
+
+	                       <option value="F513">埔心      </option>
+
+	                       <option value="F545">埔里      </option>
+
+	                       <option value="F600">嘉義      </option>
+
+	                       <option value="F630">斗南      </option>
+
+	                       <option value="F708">台南      </option>
+
+	                       <option value="F709">興達港    </option>
+
+	                       <option value="F722">佳里      </option>
+
+	                       <option value="F730">新營      </option>
+
+	                       <option value="F800">高雄      </option>
+
+	                       <option value="F820">岡山      </option>
+
+	                       <option value="F826">梓官      </option>
+
+	                       <option value="F880">澎湖      </option>
+
+	                       <option value="F916">東港      </option>
+
+	                       <option value="F936">新港      </option>
+
+	                       <option value="F950">花蓮      </option>
+
+	            </select>
+			</td>
+		</tr>
+		<tr>
+			<th>品種數目</th>
+			<td>
+				<input size="8" name="numbers" id="numbers" value="999">
+               	<span class="text_red">〔輸入999表示全部品種〕</span>
+			</td>
+		</tr>
+		<tr>
+			<th>排序方式</th>
+			<td>
+				<input value="w" type="radio" name="orderby" checked="">依交易量排序&nbsp;
+	            <input value="p" type="radio" name="orderby">依價格排序&nbsp;
+	       		<input value="i" type="radio" name="orderby">依品名排序
+	        </td>
+		</tr>
+	</tbody>
+</table>
+<div class="x-actionbar">
+	<button type="button" class="x-btn x-icon x-btn-max x-blue btn-search btn-form" onclick="send()">執行查詢</button>
+	<button type="button" class="x-btn x-icon x-btn-max x-blue btn-download btn-form" onclick="dwnDoc();">下載資料</button>
+	<button type="button" class="x-btn x-icon x-btn-max x-blue btn-trash btn-form" onclick="window.location.reload();">清除重置</button>
+	<button type="button" class="x-btn x-icon x-btn-max x-blue btn-goback btn-form" onclick="location.replace('/efish/statistics/reportmap.htm')">回上一頁</button>
+</div>
+<!-- ***************************************************** -->
+</form>
+<br>
+
+<hr>
+<table style="width:700px" class="text">
+  <tbody><tr>
+    <td>交易日期：民國114年2月3日</td>
+  </tr>
+  <tr>
+    <td>天　　氣：雨天  </td>
+  </tr><tr>
+      <td>市場名稱：F109 台北      </td>
+    <td style="text-align:right">
+      <img src="/efish/images/button_market.gif" width="111" height="24" onclick="window.open('/efish/statistics/marketsituationdisplay.htm?d=114.2.3&amp;m=F109','','scrollbars=yes,width=800,height=600')">
+    </td>
+  </tr>
+</tbody></table>
+<table id="ltable" class="bk_white">
+  <thead>
+    <tr>
+      <th style="width:10%;text-align:center;" class="bk header">品種<br>代碼</th>
+      <th style="width:10%;text-align:center;" class="bk">魚貨名稱</th>
+      <th style="width:10%;text-align:center;" class="bk header">上價<br>(元/公斤)</th>
+      <th style="width:10%;text-align:center;" class="bk header">中價<br>(元/公斤)</th>
+      <th style="width:10%;text-align:center;" class="bk header">下價<br>(元/公斤)</th>
+      <th style="width:10%;text-align:center;" class="bk header">交易量<br>(公斤)</th>
+      <th style="width:10%;text-align:center;" class="bk header">交易量漲跌幅+(-)%</th>
+      <th style="width:10%;text-align:center;" class="bk header">平均價<br>(元/公斤)</th>
+      <th style="width:10%;text-align:center;" class="bk header">平均價漲跌幅+(-)%</th>
+    </tr>
+  </thead>
+  <tbody>
+
+
+    <tr>
+      <td style="text-align:center">1071</td>
+      <td style="text-align:center">金目鱸              </td>
+      <td style="text-align:right">144.2</td>
+      <td style="text-align:right">101.7</td>
+      <td style="text-align:right">77.5</td>
+      <td style="text-align:right">3,969.3</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">105.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1041</td>
+      <td style="text-align:center">虱目魚              </td>
+      <td style="text-align:right">100.2</td>
+      <td style="text-align:right">90.4</td>
+      <td style="text-align:right">80.0</td>
+      <td style="text-align:right">2,791.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">90.3</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2341</td>
+      <td style="text-align:center">（日本）白帶魚              </td>
+      <td style="text-align:right">203.5</td>
+      <td style="text-align:right">153.8</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">2,751.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">153.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">5022</td>
+      <td style="text-align:center">文蛤養       </td>
+      <td style="text-align:right">150.5</td>
+      <td style="text-align:right">101.0</td>
+      <td style="text-align:right">96.8</td>
+      <td style="text-align:right">2,616.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">110.1</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2331</td>
+      <td style="text-align:center">鯖魚                </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">52.3</td>
+      <td style="text-align:right">37.2</td>
+      <td style="text-align:right">2,025.5</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">58.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2106</td>
+      <td style="text-align:center">勿仔                </td>
+      <td style="text-align:right">155.6</td>
+      <td style="text-align:right">151.1</td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">2,015.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">151.1</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2073</td>
+      <td style="text-align:center">硬尾                </td>
+      <td style="text-align:right">50.7</td>
+      <td style="text-align:right">50.0</td>
+      <td style="text-align:right">46.0</td>
+      <td style="text-align:right">1,845.2</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">49.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2999</td>
+      <td style="text-align:center">其他非凍結魚        </td>
+      <td style="text-align:right">427.6</td>
+      <td style="text-align:right">111.8</td>
+      <td style="text-align:right">93.9</td>
+      <td style="text-align:right">1,738.6</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">171.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">4015</td>
+      <td style="text-align:center">白蝦            </td>
+      <td style="text-align:right">237.4</td>
+      <td style="text-align:right">169.8</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">1,644.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">169.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">5012</td>
+      <td style="text-align:center">牡蠣養              </td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">100.1</td>
+      <td style="text-align:right">71.9</td>
+      <td style="text-align:right">1,552.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">104.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1011</td>
+      <td style="text-align:center">吳郭魚</td>
+      <td style="text-align:right">73.3</td>
+      <td style="text-align:right">63.7</td>
+      <td style="text-align:right">40.2</td>
+      <td style="text-align:right">1,357.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">60.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2781</td>
+      <td style="text-align:center">鮭魚          </td>
+      <td style="text-align:right">250.9</td>
+      <td style="text-align:right">220.8</td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">1,156.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">222.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1272</td>
+      <td style="text-align:center">午仔魚              </td>
+      <td style="text-align:right">251.6</td>
+      <td style="text-align:right">211.8</td>
+      <td style="text-align:right">169.9</td>
+      <td style="text-align:right">914.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">211.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">3261</td>
+      <td style="text-align:center">肉魚(凍)            </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">850.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2164</td>
+      <td style="text-align:center">透抽                </td>
+      <td style="text-align:right">209.3</td>
+      <td style="text-align:right">143.3</td>
+      <td style="text-align:right">125.0</td>
+      <td style="text-align:right">796.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">152.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">3999</td>
+      <td style="text-align:center">其他凍結(凍)        </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">750.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">3341</td>
+      <td style="text-align:center">（日本）白帶魚凍          </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">600.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1171</td>
+      <td style="text-align:center">青斑           </td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">225.8</td>
+      <td style="text-align:right">177.0</td>
+      <td style="text-align:right">568.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">220.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">3641</td>
+      <td style="text-align:center">比目魚、扁鱈      </td>
+      <td style="text-align:right">330.6</td>
+      <td style="text-align:right">132.0</td>
+      <td style="text-align:right">120.4</td>
+      <td style="text-align:right">549.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">169.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2013</td>
+      <td style="text-align:center">盤仔                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">542.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1181</td>
+      <td style="text-align:center">黃臘鰺(紅杉)</td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">222.3</td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">530.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">223.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">4071</td>
+      <td style="text-align:center">劍蝦           </td>
+      <td style="text-align:right">257.9</td>
+      <td style="text-align:right">226.1</td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">524.2</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">227.2</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1072</td>
+      <td style="text-align:center">加州鱸              </td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">136.8</td>
+      <td style="text-align:right">83.8</td>
+      <td style="text-align:right">417.3</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">136.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1073</td>
+      <td style="text-align:center">七星鱸              </td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">138.4</td>
+      <td style="text-align:right">92.1</td>
+      <td style="text-align:right">403.1</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">138.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2064</td>
+      <td style="text-align:center">白口                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">50.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">360.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">50.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">3331</td>
+      <td style="text-align:center">鯖魚(凍)            </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">350.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">4509</td>
+      <td style="text-align:center">其他蝦類            </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">350.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1024</td>
+      <td style="text-align:center">大頭鰱              </td>
+      <td style="text-align:right">115.0</td>
+      <td style="text-align:right">107.8</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">310.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">107.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2261</td>
+      <td style="text-align:center">肉魚                </td>
+      <td style="text-align:right">241.3</td>
+      <td style="text-align:right">192.3</td>
+      <td style="text-align:right">180.0</td>
+      <td style="text-align:right">274.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">192.3</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1174</td>
+      <td style="text-align:center">珍珠龍膽/龍虎斑</td>
+      <td style="text-align:right">211.3</td>
+      <td style="text-align:right">210.3</td>
+      <td style="text-align:right">210.0</td>
+      <td style="text-align:right">273.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">210.3</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">4511</td>
+      <td style="text-align:center">蟳                  </td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">195.7</td>
+      <td style="text-align:right">178.3</td>
+      <td style="text-align:right">230.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">195.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2122</td>
+      <td style="text-align:center">花鰹                </td>
+      <td style="text-align:right">62.3</td>
+      <td style="text-align:right">40.7</td>
+      <td style="text-align:right">40.0</td>
+      <td style="text-align:right">174.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">44.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1999</td>
+      <td style="text-align:center">其他養殖            </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">172.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2142</td>
+      <td style="text-align:center">馬加                </td>
+      <td style="text-align:right">341.0</td>
+      <td style="text-align:right">265.2</td>
+      <td style="text-align:right">226.8</td>
+      <td style="text-align:right">137.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">272.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2163</td>
+      <td style="text-align:center">花枝                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">128.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1012</td>
+      <td style="text-align:center">尼羅紅魚            </td>
+      <td style="text-align:right">120.2</td>
+      <td style="text-align:right">83.0</td>
+      <td style="text-align:right">74.1</td>
+      <td style="text-align:right">126.6</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">88.6</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2165</td>
+      <td style="text-align:center">軟舌、軟絲                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">117.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1023</td>
+      <td style="text-align:center">草魚                </td>
+      <td style="text-align:right">145.0</td>
+      <td style="text-align:right">128.9</td>
+      <td style="text-align:right">120.0</td>
+      <td style="text-align:right">104.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">130.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2072</td>
+      <td style="text-align:center">目孔                </td>
+      <td style="text-align:right">92.9</td>
+      <td style="text-align:right">82.6</td>
+      <td style="text-align:right">80.0</td>
+      <td style="text-align:right">101.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">82.6</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2271</td>
+      <td style="text-align:center">午仔魚              </td>
+      <td style="text-align:right">422.5</td>
+      <td style="text-align:right">323.9</td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">66.1</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">328.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1164</td>
+      <td style="text-align:center">紅鰽                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">62.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">1191</td>
+      <td style="text-align:center">香魚                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">60.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">200.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2201</td>
+      <td style="text-align:center">石斑魚              </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">500.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">60.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">500.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2351</td>
+      <td style="text-align:center">鱝(魴仔)        </td>
+      <td style="text-align:right">68.5</td>
+      <td style="text-align:right">56.0</td>
+      <td style="text-align:right">44.5</td>
+      <td style="text-align:right">58.5</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">56.2</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2082</td>
+      <td style="text-align:center">紅古                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">54.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">150.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2143</td>
+      <td style="text-align:center">白北                </td>
+      <td style="text-align:right">301.2</td>
+      <td style="text-align:right">262.1</td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">45.7</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">267.5</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2151</td>
+      <td style="text-align:center">大鯊                </td>
+      <td style="text-align:right">80.0</td>
+      <td style="text-align:right">76.6</td>
+      <td style="text-align:right">70.0</td>
+      <td style="text-align:right">31.1</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">76.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2071</td>
+      <td style="text-align:center">四破                </td>
+      <td style="text-align:right">76.9</td>
+      <td style="text-align:right">71.4</td>
+      <td style="text-align:right">70.0</td>
+      <td style="text-align:right">25.5</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">71.4</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2067</td>
+      <td style="text-align:center">鮸魚                </td>
+      <td style="text-align:right">140.0</td>
+      <td style="text-align:right">135.3</td>
+      <td style="text-align:right">130.0</td>
+      <td style="text-align:right">21.9</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">135.2</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">4999</td>
+      <td style="text-align:center">其他蟹類            </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">30.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">20.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">30.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2134</td>
+      <td style="text-align:center">白皮旗              </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">11.5</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">250.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2015</td>
+      <td style="text-align:center">黑鯛                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">80.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">10.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">80.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">4521</td>
+      <td style="text-align:center">花市仔            </td>
+      <td style="text-align:right">104.1</td>
+      <td style="text-align:right">68.8</td>
+      <td style="text-align:right">60.0</td>
+      <td style="text-align:right">10.2</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">68.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2076</td>
+      <td style="text-align:center">鐵甲                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">30.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">8.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">30.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2301</td>
+      <td style="text-align:center">尖梭                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">3.8</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+    <tr>
+      <td style="text-align:center">2169</td>
+      <td style="text-align:center">章魚                </td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">0</td>
+      <td style="text-align:right">1.5</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+      <td style="text-align:right">100.0</td>
+      <td style="text-align:right">
+
+
+
+
+      </td>
+    </tr>
+
+
+
+
+  </tbody>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <tbody><tr>
+      <td class="bk" style="text-align:center">合計</td>
+      <td style="text-align:right" colspan="4">&nbsp;</td>
+      <td style="text-align:right">36,670.9</td>
+      <td style="text-align:right">&nbsp;</td>
+      <td style="text-align:right">128.8</td>
+      <td>&nbsp;</td>
+    </tr>
+
+
+</tbody></table>
+<br>
+<div class="text" style="text-align:center">"--"代表無交昜或是尚未通報</div>
+
+<script type="text/javascript">
+if($('#numbers').val() == '')$('#numbers').val("999");
+</script>
+    		</div>
+		</div>
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/efish/css/base/footer.css">
+	<p style="margin-bottom:40px"></p>
+
+	<div id="link-link" class="footer-link">
+		<div class="footer-link-item" title="農業部漁業署">
+			<a href="https://www.fa.gov.tw" target="_blank">
+				<img src="/efish/images/link/icon_01.png">
+			</a>
+		</div>
+		<div class="footer-link-item" title="農業部資料開放平台">
+			<a href="https://data.moa.gov.tw/" target="_blank">
+				<img src="/efish/images/link/icon_10.svg">
+			</a>
+		</div>
+		<div class="footer-link-item" title="漁業統計年報">
+			<a href="https://www.fa.gov.tw/list.php?theme=FS_AR&amp;subtheme=" target="_blank">
+				<img src="/efish/images/link/icon_11.png">
+			</a>
+		</div>
+		<div class="footer-link-item" title="養殖漁業放養查詢平台">
+			<a href="https://fadopen.fa.gov.tw/fadopen/" target="_blank">
+				<img src="/efish/images/link/icon_12.png">
+			</a>
+		</div>
+		<div class="footer-link-item" title="中華民國全國漁會">
+			<a href="http://www.rocnfa.org.tw/" target="_blank">
+				<img src="/efish/images/link/icon_09.png">
+			</a>
+		</div>
+		<div class="footer-link-item" title="台北魚市場">
+			<a href="https://www.tpfish.com.tw/" target="_blank">
+				<img src="/efish/images/link/icon_02.gif">
+			</a>
+		</div>
+		<div class="footer-link-item" title="台中魚市場">
+			<a href="https://www.tcfish.com.tw/" target="_blank">
+				<img src="/efish/images/link/icon_03.gif">
+			</a>
+		</div>
+		<div class="footer-link-item" title="嘉義魚市場">
+			<a href="https://www.cyfish.com.tw/index.html" target="_blank">
+				<img src="/efish/images/link/icon_05.gif">
+			</a>
+		</div>
+		<div class="footer-link-item" title="埔心魚市場">
+			<a href="http://pushinfish.cnx.com.tw/" target="_blank">
+				<img src="/efish/images/link/icon_04.gif">
+			</a>
+		</div>
+	</div>
+	<div class="gb-footer">
+		<svg class="footer-wave-svg" viewBox="0 0 1200 100" preserveAspectRatio="none">
+    		<path class="footer-wave-path" d="M851.8,100c125,0,288.3-45,348.2-64V0H0v44c3.7-1,7.3-1.9,11-2.9C80.7,22,151.7,10.8,223.5,6.3C276.7,2.9,330,4,383,9.8 c52.2,5.7,103.3,16.2,153.4,32.8C623.9,71.3,726.8,100,851.8,100z">
+     		</path>
+		</svg>
+		<div style="padding:0px;display: flex;align-items: center;">
+			<img src="/efish/images/icons/up_white.png" style="width: 16px;height: 16px;">
+			&nbsp;相關網站
+		</div>
+		<div>
+			<span class="mobile-qrcode">
+				<a href="/efish/mobile/main.htm" style="text-decoration: none" target="_top">
+					<img src="/efish/images/mobile_link.gif">
+				</a>
+			</span>
+			<span>
+				<div>主辦單位：農業部漁業署</div>
+          		<div>執行單位：農業部漁業署、財團法人台灣養殖漁業發展基金會</div>
+                <div>建議最佳解析度為1024*768或以上</div>
+        		<div>今日瀏覽人次：<span id="tc">65</span></div>
+        		<div>累計瀏覽人次：<span id="nc">2,715,563</span></div>
+              	<div class="tech-link"><a href="mailto:jackse@gmail.com">技術回答</a></div>
+       		</span>
+   		</div>
+	</div>
+
+  	</div>
+
+</body>

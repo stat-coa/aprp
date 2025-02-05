@@ -345,8 +345,8 @@ class HTMLParser:
         return [th.text.replace('\n', '') for th in self.all_th] if self.all_th else []
 
     @staticmethod
-    def convert_to_float(value: Optional[str]) -> Optional[float]:
-        return float(value.replace(',', '').strip()) if value else None
+    def convert_to_float(value: Optional[str]) -> float:
+        return float(value.replace(',', '').strip())
 
     def _extract_relevant_data(self, row_data: dict) -> Optional[OrderedDict]:
         """
@@ -359,7 +359,7 @@ class HTMLParser:
         try:
             return OrderedDict({
                 "交易日期": self.api.date_str,
-                "品種代碼": row_data.get("品種代碼"),
+                "品種代碼": int(row_data.get("品種代碼")),
                 "魚貨名稱": row_data.get("魚貨名稱"),
                 "市場名稱": self.api.SOURCES.get(self.source_code),
                 "上價": self.convert_to_float(row_data.get("上價(元/公斤)")),
@@ -368,7 +368,12 @@ class HTMLParser:
                 "交易量": self.convert_to_float(row_data.get("交易量(公斤)")),
                 "平均價": self.convert_to_float(row_data.get("平均價(元/公斤)")),
             })
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, AttributeError):
+            self.api.LOGGER.exception(
+                f'ValueError: {row_data}, source: {self.api.SOURCES.get(self.source_code)}',
+                extra=self.api.LOGGER_EXTRA
+            )
+
             return None
 
     def parse_table(self) -> Optional[List[OrderedDict]]:

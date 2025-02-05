@@ -552,7 +552,7 @@ class ScrapperApi(Api):
         for resp in responses:
             parser = HTMLParser(response=resp, api=self)
 
-            if resp.status_code == 200:
+            if resp.status_code == 200 and resp.request:
                 self.df_result = parser.parse_table()
             else:
                 self.LOGGER.warning(

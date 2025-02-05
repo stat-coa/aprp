@@ -546,6 +546,8 @@ class ScrapperApi(Api):
 
                 return Response()
 
+        return Response()
+
     def _convert_to_dataframe(self, responses: List[Response]) -> pd.DataFrame:
         for resp in responses:
             parser = HTMLParser(response=resp, api=self)

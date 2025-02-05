@@ -1,3 +1,4 @@
+import pandas as pd
 import datetime
 from typing import Tuple
 from unittest.mock import patch, MagicMock
@@ -10,6 +11,7 @@ from requests import Response, Request
 from apps.dailytrans.builders.eir032 import HTMLParser, ScrapperApi
 from apps.dailytrans.builders.utils import DirectData
 from apps.seafoods.models import Seafood
+from apps.logs.models import Log
 
 
 @pytest.fixture
@@ -40,6 +42,11 @@ def mock_raw_data():
 
 
 @pytest.fixture
+def mock_code() -> set:
+    return set(pd.read_csv('./data/mock_code.csv', dtype={'code': int}).code)
+
+
+@pytest.fixture
 @patch('apps.configs.models.Type.objects', new_callable=MagicMock)
 @patch('apps.configs.models.Source.objects', new_callable=MagicMock)
 @patch('apps.configs.models.Config.objects', new_callable=MagicMock)
@@ -64,7 +71,6 @@ def mock_instances(mock_response: MagicMock, mock_api_obj) -> Tuple[MagicMock, S
     mock_params = '&'.join([f'{k}={v}' for k, v in params_dict])
     req = Request(url=f'{api.URL}?{mock_params}')
     mock_response.request = req
-    mock_response.api = api
 
     return mock_response, api
 
@@ -348,4 +354,81 @@ class TestHTMLParser:
 
 @pytest.mark.django_db
 class TestScrapperApi:
-    ...
+    def test_params_list_property(self, mock_instances, mock_html_page: str):
+        # Arrange
+        mock_response, api = mock_instances
+
+        # Act
+        params = api.params_list
+
+        # Assert
+        assert [d['mid'] for d in params] == list(api.SOURCES.keys())
+
+    @patch('apps.dailytrans.builders.eir032.post', new_callable=MagicMock)
+    @patch('apps.dailytrans.builders.eir032.time.sleep', new_callable=MagicMock)
+    def test_make_request(self, mock_sleep: MagicMock, mock_post: MagicMock, mock_instances, mock_html_page: str):
+        # Arrange
+        mock_response, api = mock_instances
+        mock_post.return_value = mock_response
+        urls = api.urls_list
+        params = api.params_list
+        headers = api.headers_list
+
+        # Case 1: happy path
+        mock_response.status_code = 200
+
+        # Act
+        resp = api._make_request(urls[0], params[0], headers[0])
+
+        # Assert
+        assert resp == mock_response
+
+        # Case 2: bad path with status code 404
+        mock_response.status_code = 404
+
+        # Act
+        resp = api._make_request(urls[0], params[0], headers[0])
+
+        # Assert
+        assert resp is not None and resp != mock_response
+        assert resp.status_code is None
+        mock_post.assert_called_with(urls[0], params=params[0], headers=headers[0])
+        mock_sleep.assert_called_with(api.SLEEP_TIME)
+        assert Log.objects.filter(level=30).count() == 3
+
+        # Case 3: bad path with ConnectionError
+        mock_post.side_effect = ConnectionError
+
+        # Act
+        resp = api._make_request(urls[0], params[0], headers[0])
+
+        # Assert
+        assert resp is not None and resp != mock_response
+        assert resp.status_code is None
+        assert Log.objects.filter(level=40).count() == 1
+
+    def test_convert_to_dataframe(self, mock_instances, mock_html_page: str, mock_code):
+        # Arrange
+        mock_response, api = mock_instances
+        api.target_items = mock_code
+        mock_response.text = mock_html_page
+
+        # Case 1: happy path
+        mock_response.status_code = 200
+
+        # Act
+        df = api._convert_to_dataframe([mock_response])
+
+        # Assert
+        assert not df.empty
+
+        # Case 2: bad path with status code 404
+        mock_response.status_code = 404
+        api._ScrapperApi__df_list = []
+
+        # Act
+        df = api._convert_to_dataframe([mock_response])
+
+        # Assert
+        assert Log.objects.filter(level=30).count() == 1
+        assert df.empty

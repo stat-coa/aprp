@@ -124,15 +124,19 @@ class Api(AbstractApi):
 
     def _access_data_from_api(self, data: pd.DataFrame):
         data_merge = self._compare_data_from_api_and_db(data)
-        condition = ((data_merge['avg_price_x'] != data_merge['avg_price_y']) | (
-                data_merge['up_price_x'] != data_merge['up_price_y']) | (
-                             data_merge['low_price_x'] != data_merge['low_price_y']) | (
-                             data_merge['mid_price_x'] != data_merge['mid_price_y']) | (
-                             data_merge['volume_x'] != data_merge['volume_y']))
+        condition = (
+                (data_merge['avg_price_x'] != data_merge['avg_price_y']) |
+                (data_merge['up_price_x'] != data_merge['up_price_y']) |
+                (data_merge['low_price_x'] != data_merge['low_price_y']) |
+                (data_merge['mid_price_x'] != data_merge['mid_price_y']) |
+                (data_merge['volume_x'] != data_merge['volume_y'])
+        )
+
         if not data_merge[condition].empty:
             for _, value in data_merge[condition].fillna('').iterrows():
                 try:
                     existed_tran = DailyTran.objects.get(id=int(value['id'] or 0))
+
                     if value['avg_price_x']:
                         self._update_data(value, existed_tran)
                     else:
@@ -145,8 +149,10 @@ class Api(AbstractApi):
                                                 f"low_price: {value['low_price_y']}\n"
                                                 f"avg_price: {value['avg_price_y']}\n"
                                                 f"volume: {value['volume_y']} has been deleted.")
-                except Exception as e:
+                except DailyTran.DoesNotExist:
                     self._save_new_data(value)
+                except Exception as e:
+                    self.LOGGER.exception(f'exception: {e}', extra=self.LOGGER_EXTRA)
 
     def _compare_data_from_api_and_db(self, data: pd.DataFrame):
         columns = {
@@ -183,7 +189,8 @@ class Api(AbstractApi):
         existed_tran.save()
         self.LOGGER.info(
             msg=f"The data of the product: {value['product__code']} on"
-                f" {value['date'].strftime('%Y-%m-%d')} has been updated.")
+                f" {value['date'].strftime('%Y-%m-%d')} has been updated."
+        )
 
     def _save_new_data(self, value):
         products = self.MODEL.objects.filter(code=value['product__code'])
@@ -569,6 +576,7 @@ class ScrapperApi(Api):
             raise ValueError('start_date or end_date must be set')
 
         self.query_date = start_date or end_date
+        self.__df_list.clear()
 
         # 為增加效率，使用 ThreadPoolExecutor 進行多執行緒請求
         with ThreadPoolExecutor(max_workers=5) as executor:

@@ -575,9 +575,10 @@ class ScrapperApi(Api):
             if resp.status_code == 200 and resp.request:
                 self.df_result = parser.parse_table()
             else:
+                msg = self.SOURCES.get(parser.source_code) if resp.request else 'No Request'
                 self.LOGGER.warning(
                     f'Connection Refused, Status Code: {resp.status_code}, '
-                    f'source: {self.SOURCES.get(parser.source_code)}', extra=self.LOGGER_EXTRA
+                    f'source: {msg}', extra=self.LOGGER_EXTRA
                 )
 
         return self.df_result

@@ -423,8 +423,8 @@ class ScrapperApi(Api):
                       'Chrome/132.0.0.0 Safari/537.36'
     }
 
-    # 只抓取消費地市場
     SOURCES = OrderedDict({
+        # 消費地市場
         'F109': '台北',
         'F241': '三重',
         'F300': '新竹',
@@ -438,6 +438,19 @@ class ScrapperApi(Api):
         'F722': '佳里',
         'F730': '新營',
         'F820': '岡山',
+
+        # 生產地市場
+        'F200': '基隆',
+        'F261': '頭城',
+        'F270': '蘇澳',
+        'F708': '台南',
+        'F709': '興達港',
+        'F800': '高雄',
+        'F826': '梓官',
+        'F880': '澎湖',
+        'F916': '東港',
+        'F936': '新港',
+        'F950': '花蓮',
     })
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
@@ -579,7 +592,7 @@ class ScrapperApi(Api):
         self.__df_list.clear()
 
         # 為增加效率，使用 ThreadPoolExecutor 進行多執行緒請求
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=6) as executor:
             return list(executor.map(self._make_request, self.urls_list, self.params_list, self.headers_list))
 
     def loads(self, responses: List[Response]):

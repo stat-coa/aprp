@@ -405,7 +405,7 @@ class TestScrapperApi:
         # Assert
         assert resp is not None and resp != mock_response
         assert resp.status_code is None
-        assert Log.objects.filter(level=40).count() == 1
+        assert Log.objects.filter(level=40).count() == 3
 
     def test_convert_to_dataframe(self, mock_instances, mock_html_page: str, mock_code):
         # Arrange
@@ -424,6 +424,7 @@ class TestScrapperApi:
 
         # Case 2: bad path with status code 404
         mock_response.status_code = 404
+        mock_response.request = None
         api._ScrapperApi__df_list = []
 
         # Act
@@ -431,4 +432,5 @@ class TestScrapperApi:
 
         # Assert
         assert Log.objects.filter(level=30).count() == 1
+        assert Log.objects.first().msg.find('No Request') != -1
         assert df.empty

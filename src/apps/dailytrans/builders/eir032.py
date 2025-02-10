@@ -549,22 +549,19 @@ class ScrapperApi(Api):
 
         while retry_count < self.MAX_RETRY:
             try:
+                retry_count += 1
                 resp = post(url, params=params, headers=headers)
                 self.LOGGER_EXTRA['request_url'] = resp.request.url
 
                 if resp.status_code != 200:
-                    retry_count += 1
-
-                    self.LOGGER.warning(f'Connection Refused, Retry {retry_count} Time', extra=self.LOGGER_EXTRA)
+                    self.LOGGER.warning(f'Connection refused, retry {retry_count} time', extra=self.LOGGER_EXTRA)
                     time.sleep(self.SLEEP_TIME)
 
                     continue
 
                 return resp
             except Exception as e:
-                self.LOGGER.exception(f'exception: {e}', extra=self.LOGGER_EXTRA)
-
-                return Response()
+                self.LOGGER.exception(f'exception: {e}, retry {retry_count} time', extra=self.LOGGER_EXTRA)
 
         return Response()
 

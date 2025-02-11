@@ -195,37 +195,37 @@ def director(func):
             duration = end_time - start_time
 
             # TODO: 針對 DailyTran 的 not_updated 欄位進行更新，目前看不出用途，並且資料庫開銷很大，若不影響其他功能，建議移除
-            if isinstance(data, DirectData):
-                # update not_updated count
-                qs = DailyTran.objects.filter(product__config__code=data.config_code,
-                                              date__range=[start_date, end_date])
-
-                if code:
-                    qs = qs.filter(product__parent__code=code)
-
-                if name:
-                    qs = qs.filter(product__parent__name=name)
-
-                if data.type_id:
-                    qs = qs.filter(product__type__id=data.type_id)
-
-                for d in qs.filter(update_time__lte=start_time):
-                    # config_code 在 蔬菜、水果及漁產品以外，或是 type_id 不為 1(批發) 的資料(產地、零售)
-                    if data.config_code not in ['COG05', 'COG06', 'COG13'] or data.type_id != 1:
-                        if name is None and code is None and kwargs.get('history') is None:
-                            d.not_updated += 1
-                            d.save(update_fields=["not_updated"])
-                            db_logger.warning(
-                                'Daily tran data not update, counted to field "not_updated": {}'.format(str(d)), extra={
-                                    'logger_type': data.logger_type_code,
-                                })
-                        else:
-                            d.delete()
-                            db_logger.warning('Daily tran data has been deleted: {}'.format(str(d)), extra={
-                                'logger_type': data.logger_type_code,
-                            })
-
-                qs.filter(update_time__gt=start_time).update(not_updated=0)
+            # if isinstance(data, DirectData):
+            #     # update not_updated count
+            #     qs = DailyTran.objects.filter(product__config__code=data.config_code,
+            #                                   date__range=[start_date, end_date])
+            #
+            #     if code:
+            #         qs = qs.filter(product__parent__code=code)
+            #
+            #     if name:
+            #         qs = qs.filter(product__parent__name=name)
+            #
+            #     if data.type_id:
+            #         qs = qs.filter(product__type__id=data.type_id)
+            #
+            #     for d in qs.filter(update_time__lte=start_time):
+            #         # config_code 在 蔬菜、水果及漁產品以外，或是 type_id 不為 1(批發) 的資料(產地、零售)
+            #         if data.config_code not in ['COG05', 'COG06', 'COG13'] or data.type_id != 1:
+            #             if name is None and code is None and kwargs.get('history') is None:
+            #                 d.not_updated += 1
+            #                 d.save(update_fields=["not_updated"])
+            #                 db_logger.warning(
+            #                     'Daily tran data not update, counted to field "not_updated": {}'.format(str(d)), extra={
+            #                         'logger_type': data.logger_type_code,
+            #                     })
+            #             else:
+            #                 d.delete()
+            #                 db_logger.warning('Daily tran data has been deleted: {}'.format(str(d)), extra={
+            #                     'logger_type': data.logger_type_code,
+            #                 })
+            #
+            #     qs.filter(update_time__gt=start_time).update(not_updated=0)
 
             return DirectResult(start_date, end_date, duration=duration, success=True)
 

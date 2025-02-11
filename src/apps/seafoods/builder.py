@@ -1,6 +1,7 @@
 import time
 import datetime
 from apps.dailytrans.builders.eir032 import Api as WholeSaleApi
+from apps.dailytrans.builders.eir032 import ScrapperApi
 from apps.dailytrans.builders.efish import Api as OriginApi
 from apps.dailytrans.builders.utils import (
     product_generator,
@@ -56,5 +57,22 @@ def direct_origin(start_date=None, end_date=None, *args, **kwargs):
                 origin_api.load(response)
                 # sleep for that poor api service...
                 time.sleep(10)
+
+    return data
+
+
+@director
+def direct_wholesale_by_scrapping(start_date=None, end_date=None, *args, **kwargs):
+
+    data = DirectData(CONFIG_CODE, 1, LOGGER_TYPE_CODE)
+
+    for model in MODELS:
+        wholesale_api = ScrapperApi(model=model, **data._asdict())
+        date_diff = end_date - start_date
+
+        for delta in range(date_diff.days + 1):
+            responses = wholesale_api.requests(start_date=start_date + datetime.timedelta(days=delta))
+            wholesale_api.loads(responses)
+            time.sleep(5)
 
     return data

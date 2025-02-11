@@ -1080,7 +1080,7 @@ class ExcelHandler:
         self.__sheet['G6'] = f'{last_year}\n年{month_of_last_year}月\n平均價格'
 
         dt_start = self.factory.last_week_start
-        dt_end = self.factory.this_week_end
+        dt_end = self.factory.last_week_end
         last_week_range_text = f'{dt_start.month}/{dt_start.day}~{dt_end.month}/{dt_end.day}'
         self.__sheet['W8'] = last_week_range_text
 

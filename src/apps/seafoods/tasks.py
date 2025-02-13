@@ -3,7 +3,7 @@ import logging
 from celery.task import task
 from .builder import (
     direct_origin,
-    direct_wholesale,
+    direct_generic_wholesale,
 )
 
 
@@ -14,7 +14,7 @@ def build_seafood_wholesale(delta):
         'type_code': 'LOT-seafoods',
     }
     try:
-        result = direct_wholesale(delta=delta)
+        result = direct_generic_wholesale(delta=delta)
         if result.success:
             logger_extra['duration'] = result.duration
             db_logger.info('Successfully process wholesale trans: %s - %s' % (result.start_date, result.end_date), extra=logger_extra)

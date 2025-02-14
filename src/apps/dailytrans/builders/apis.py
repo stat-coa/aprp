@@ -309,7 +309,8 @@ class Api(AbstractApi):
         data_api = self._convert_to_data_frame(data)
 
         try:
-            self._access_data_from_api(data_api)
+            if not data_api.empty:
+                self._access_data_from_api(data_api)
         except Exception as e:
             self.LOGGER.exception(f'exception: {e}, data_api: {data_api}', extra=self.LOGGER_EXTRA)
 

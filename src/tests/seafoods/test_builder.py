@@ -43,42 +43,29 @@ def test_direct_generic_wholesale(api: MagicMock, scrapper_api: MagicMock, mock_
     mock_scrapper_api.requests.return_value = [resp]
 
 
-    # Case 1: days = 3
+    # Case 1: happy path
     # Act
     direct_generic_wholesale(delta=-3)
 
     # Assert
-    assert mock_api.request.call_count == 4
-    mock_api.request.assert_called_with(start_date=dt, end_date=dt)
-    mock_scrapper_api.requests.assert_not_called()
-
-    # Case 2: days = 30
-    mock_api.reset_mock()
-    mock_scrapper_api.reset_mock()
-
-    # Act
-    direct_generic_wholesale(delta=-30)
-
-    # Assert
-    assert mock_scrapper_api.requests.call_count == 31
-    assert mock_scrapper_api.loads.call_count == 31
-    assert mock_time.sleep.call_count == 31
+    assert mock_scrapper_api.requests.call_count == 4
+    mock_scrapper_api.requests.assert_called_with(start_date=dt)
     mock_api.request.assert_not_called()
 
-    # Case 3: days = 30 with all failed requests
+    # Case 2: all failed requests
     mock_api.reset_mock()
     mock_scrapper_api.reset_mock()
     mock_time.reset_mock()
     resp.status_code = 404
 
     # Act
-    direct_generic_wholesale(delta=-30)
+    direct_generic_wholesale(delta=-3)
 
     # Assert
-    assert mock_scrapper_api.LOGGER.warning.call_count == 31
+    assert mock_scrapper_api.LOGGER.warning.call_count == 4
     mock_scrapper_api.LOGGER.warning.assert_called_with(
         'All requests failed, try to use API to fetch the data', extra=mock_scrapper_api.LOGGER_EXTRA
     )
-    assert mock_api.request.call_count == 31
-    assert mock_api.load.call_count == 31
+    assert mock_api.request.call_count == 4
+    assert mock_api.load.call_count == 4
     mock_scrapper_api.loads.assert_not_called()

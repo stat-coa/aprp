@@ -31,8 +31,7 @@ def direct_generic_wholesale(
         start_date: Union[datetime.datetime, str], end_date: Union[datetime.datetime, str], *args, **kwargs
 ):
     """
-    此 function 為使用 API 或爬蟲的方式取得批發價格，目前的策略為若日期區間大於 30 天，則使用爬蟲方式取得資料，否則使用 API 取得資料
-    (因 API 短期區間內的價格比較不會有不同步的問題)。
+    此 function 為使用 API 或爬蟲的方式取得批發價格。
     """
 
     data = DirectData(CONFIG_CODE, 1, LOGGER_TYPE_CODE)
@@ -43,31 +42,24 @@ def direct_generic_wholesale(
         date_diff = end_date - start_date
 
         for delta in range(date_diff.days + 1):
-            if date_diff.days >= 30:
-                responses = scrapping_api.requests(start_date=start_date + datetime.timedelta(days=delta))
+            responses = scrapping_api.requests(start_date=start_date + datetime.timedelta(days=delta))
 
-                # if all requests failed, try to use API to fetch the data
-                if all(resp.status_code != 200 for resp in responses):
-                    scrapping_api.LOGGER.warning(
-                        'All requests failed, try to use API to fetch the data', extra=scrapping_api.LOGGER_EXTRA
-                    )
+            # if all requests failed, try to use API to fetch the data
+            if all(resp.status_code != 200 for resp in responses):
+                scrapping_api.LOGGER.warning(
+                    'All requests failed, try to use API to fetch the data', extra=scrapping_api.LOGGER_EXTRA
+                )
 
-                    response = wholesale_api.request(
-                        start_date=start_date + datetime.timedelta(days=delta),
-                        end_date=start_date + datetime.timedelta(days=delta)
-                    )
-                    wholesale_api.load(response)
-                else:
-                    scrapping_api.loads(responses)
-
-                    # prevent from being blocked by the server
-                    time.sleep(5)
-            else:
                 response = wholesale_api.request(
                     start_date=start_date + datetime.timedelta(days=delta),
                     end_date=start_date + datetime.timedelta(days=delta)
                 )
                 wholesale_api.load(response)
+            else:
+                scrapping_api.loads(responses)
+
+                # prevent from being blocked by the server
+                time.sleep(5)
 
     return data
 

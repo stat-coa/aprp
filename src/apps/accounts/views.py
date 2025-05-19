@@ -200,7 +200,7 @@ def reset_email_view(request, key=None):
         raise Http404
 
 
-def password_change(request):
+def change_password(request):
     form = forms.ChangePasswordForm(request.POST or None)
 
     if request.method == 'POST':
@@ -214,7 +214,7 @@ def password_change(request):
     )
 
 
-def password_change_done(request):
+def change_password_done(request):
     return auth_views.password_change_done(
         request,
         template_name='password_change_done.html'

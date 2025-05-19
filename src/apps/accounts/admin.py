@@ -1,14 +1,49 @@
-from django.contrib import admin
-from django.contrib.auth.models import Group
+from django.conf.urls import url
+from django.core.urlresolvers import reverse
+from django.contrib import admin, messages
 from django.contrib.admin import SimpleListFilter
+from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
+from django.contrib.auth.models import Group, User
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
+from . import models
 
-from .models import (ActivationProfile,
-                     GroupInformation,
-                     UserInformation,
-                     ResetPasswordProfile,
-                     ResetEmailProfile,
-                     AbstractProfile)
+
+admin.site.unregister(User)
+
+# 後台管理介面重置密碼
+@admin.register(User)
+class UserAdmin(DefaultUserAdmin):
+
+    change_form_template = 'admin/change_password.html'
+
+    def get_urls(self):
+        urls = super(UserAdmin, self).get_urls()
+        custom = [
+            url(
+                r'^(?P<object_id>[^/]+)/reset-password/$',
+                self.admin_site.admin_view(self.reset_password_view),
+                name='auth_user_reset_password',
+            ),
+        ]
+        return custom + urls
+
+    def reset_password_view(self, request, object_id, *args, **kwargs):
+        user = User.objects.get(pk=object_id)
+        default_password = f"{user.username}{user.username}"
+        user.set_password(default_password)
+        user.is_active = False
+        user.save()
+
+        self.message_user(
+            request,
+        f"使用者 {user.username} 密碼已重置為 {default_password}",
+            level=messages.SUCCESS
+        )
+
+        return redirect(
+            reverse('admin:auth_user_change', args=[object_id])
+        )
 
 
 class GroupListFilter(SimpleListFilter):

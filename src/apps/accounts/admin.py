@@ -77,7 +77,7 @@ class GroupListFilter(SimpleListFilter):
 
 
 class UserInformationAdmin(admin.ModelAdmin):
-    model = UserInformation
+    model = models.UserInformation
     list_filter = (
         GroupListFilter,
         'amislist_viewer',
@@ -92,9 +92,9 @@ class UserInformationAdmin(admin.ModelAdmin):
     )
 
 
-admin.site.register(ActivationProfile)
-admin.site.register(GroupInformation)
-admin.site.register(UserInformation, UserInformationAdmin)
-admin.site.register(ResetPasswordProfile)
-admin.site.register(ResetEmailProfile)
-admin.site.register(AbstractProfile)
+admin.site.register(models.ActivationProfile)
+admin.site.register(models.GroupInformation)
+admin.site.register(models.UserInformation, UserInformationAdmin)
+admin.site.register(models.ResetPasswordProfile)
+admin.site.register(models.ResetEmailProfile)
+admin.site.register(models.AbstractProfile)

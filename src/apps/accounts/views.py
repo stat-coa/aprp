@@ -1,28 +1,21 @@
-from django.http import Http404
+import logging
+
 from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.contrib import messages
+from django.contrib.auth import views as auth_views
 from django.contrib.auth import (
     authenticate,
     login,
     logout,
     get_user_model
 )
+from django.http import Http404
 from django.shortcuts import render, redirect
-from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
-from .forms import (
-    UserLoginForm,
-    UserRegisterForm,
-    ResendEmailForm,
-    UserResetPasswordForm,
-)
-from .models import (
-    ActivationProfile,
-    GroupInformation,
-    ResetPasswordProfile,
-    ResetEmailProfile
-)
-import logging
-from django.conf import settings
+from . import models
+from . import forms
+
 
 User = get_user_model()
 
@@ -31,7 +24,7 @@ def login_view(request):
     if settings.DEBUG:
         print(f'ip: {request.META["REMOTE_ADDR"]}')
     
-    form = UserLoginForm(request.POST or None)
+    form = forms.UserLoginForm(request.POST or None)
     content = {
         'form': form
     }
@@ -44,7 +37,7 @@ def login_view(request):
         login(request, user)
         #紀錄帳號每次登入時間
         dns = user.email.split('@')[1]
-        group_info = GroupInformation.objects.filter(email_dns=dns).first()
+        group_info = models.GroupInformation.objects.filter(email_dns=dns).first()
         db_logger = logging.getLogger('aprp')
         db_logger.info(f'{user} {user.info} {group_info}', extra={'type_code': 'login'})
         # remember me
@@ -63,7 +56,7 @@ def login_view(request):
 
 
 def register_view(request):
-    form = UserRegisterForm(request.POST or None)
+    form = forms.UserRegisterForm(request.POST or None)
     template = 'register.html'
     context = {
         "form": form
@@ -75,7 +68,7 @@ def register_view(request):
         user.save()
         # Assign user to groups
         dns = user.email.split('@')[1]
-        group_info = GroupInformation.objects.filter(email_dns=dns).first()
+        group_info = models.GroupInformation.objects.filter(email_dns=dns).first()
         if group_info:
             for obj in group_info.parents():
                 obj.group.user_set.add(user)
@@ -92,7 +85,7 @@ def logout_view(request):
 
 
 def forgot_password_view(request):
-    form = ResendEmailForm(request.POST or None)
+    form = forms.ResendEmailForm(request.POST or None)
     content = {
         "form": form,
         "title": _('Forgot Password')
@@ -108,7 +101,7 @@ def forgot_password_view(request):
         if username:
             user = User.objects.get(username=username)
 
-        ResetPasswordProfile.objects.create(user=user)
+        models.ResetPasswordProfile.objects.create(user=user)
 
         content['mail_sent'] = True
         return render(request, template, content)
@@ -117,7 +110,7 @@ def forgot_password_view(request):
 
 
 def activation_resend_view(request):
-    form = ResendEmailForm(request.POST or None)
+    form = forms.ResendEmailForm(request.POST or None)
     content = {
         "form": form,
         "title": _('Activate Account')
@@ -136,7 +129,7 @@ def activation_resend_view(request):
         if user.is_active:
             form.add_error(field=None, error=_('Your account is already activated'))
         else:
-            ActivationProfile.objects.create(user=user)
+            models.ActivationProfile.objects.create(user=user)
             content['mail_sent'] = True
 
         return render(request, template, content)
@@ -146,8 +139,8 @@ def activation_resend_view(request):
 
 def reset_password_view(request, key=None):
     template = 'reset-password.html'
-    form = UserResetPasswordForm(request.POST or None)
-    q = ResetPasswordProfile.objects.filter(key=key)
+    form = forms.UserResetPasswordForm(request.POST or None)
+    q = models.ResetPasswordProfile.objects.filter(key=key)
     context = {
         "form": form,
     }
@@ -172,7 +165,7 @@ def reset_password_view(request, key=None):
 
 
 def user_activate(request, key=None, *args, **kwargs):
-    q = ActivationProfile.objects.filter(key=key)
+    q = models.ActivationProfile.objects.filter(key=key)
 
     if q.exists():
         activation = q.first()
@@ -191,7 +184,7 @@ def user_activate(request, key=None, *args, **kwargs):
 
 
 def reset_email_view(request, key=None):
-    q = ResetEmailProfile.objects.filter(key=key)
+    q = models.ResetEmailProfile.objects.filter(key=key)
 
     if q.exists():
         activation = q.first()
@@ -205,3 +198,24 @@ def reset_email_view(request, key=None):
         return redirect('accounts:login')
     else:
         raise Http404
+
+
+def password_change(request):
+    form = forms.ChangePasswordForm(request.POST or None)
+
+    if request.method == 'POST':
+        ...
+
+    return auth_views.password_change(
+        request,
+        template_name='password_change.html',
+        post_change_redirect=reverse('accounts:password_change_done'),
+        password_change_form=forms.ChangePasswordForm
+    )
+
+
+def password_change_done(request):
+    return auth_views.password_change_done(
+        request,
+        template_name='password_change_done.html'
+    )

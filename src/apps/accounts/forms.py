@@ -1,14 +1,16 @@
 from django import forms
+from django.core.urlresolvers import reverse
+from django.core.validators import RegexValidator
 from django.contrib.auth import (
     authenticate,
     get_user_model
 )
-from .models import GroupInformation, ResetEmailProfile
-from django.utils.translation import ugettext as _
-from django.core.validators import RegexValidator
-from django.utils.safestring import mark_safe
-from django.core.urlresolvers import reverse
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
+from django.utils.translation import ugettext as _
+from django.utils.safestring import mark_safe
+from .models import GroupInformation, ResetEmailProfile
+
 
 User = get_user_model()
 
@@ -229,3 +231,21 @@ class ResendEmailForm(forms.Form):
             if not username_qs.exists():
                 raise forms.ValidationError(_('This account is not exist'))
         return username
+
+
+class ChangePasswordForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label=_("目前密碼"),
+        widget=forms.PasswordInput,
+        help_text=_("請輸入您目前正在使用的密碼。")
+    )
+    new_password1 = forms.CharField(
+        label=_("新密碼"),
+        widget=forms.PasswordInput,
+        help_text=_("請輸入新的密碼，最少為 8 個字元。")
+    )
+    new_password2 = forms.CharField(
+        label=_("確認新密碼"),
+        widget=forms.PasswordInput,
+        help_text=_("再次輸入新密碼以確認。")
+    )

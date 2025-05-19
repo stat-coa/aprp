@@ -103,10 +103,8 @@ class UserLoginForm(forms.Form):
                 self.cleaned_data['is_active'] = False
                 raise forms.ValidationError(
                     mark_safe(
-                        '{}<p><br><a href="{}" class="btn btn-sm btn-default">{}</a></p>'.format(
-                            _('Please activate your account'),
-                            reverse('accounts:activation_resend'),
-                            _('Resend Activation Email')
+                        '{}'.format(
+                            _('Please activate your account')
                         )
                     )
                 )

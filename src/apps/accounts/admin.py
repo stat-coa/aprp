@@ -14,7 +14,6 @@ admin.site.unregister(User)
 # 後台管理介面重置密碼
 @admin.register(User)
 class UserAdmin(DefaultUserAdmin):
-
     change_form_template = 'admin/change_password.html'
 
     def get_urls(self):
@@ -28,16 +27,20 @@ class UserAdmin(DefaultUserAdmin):
         ]
         return custom + urls
 
-    def reset_password_view(self, request, object_id, *args, **kwargs):
+    def reset_password_view(self, request, object_id):
         user = User.objects.get(pk=object_id)
-        default_password = f"{user.username}{user.username}"
+        default_password = f'{user.username}{user.username}'
         user.set_password(default_password)
         user.is_active = False
         user.save()
 
+        if hasattr(user,'info'):
+            user.info.reporter = False
+            user.info.save()
+
         self.message_user(
             request,
-        f"使用者 {user.username} 密碼已重置為 {default_password}",
+        f'使用者 {user.username} 密碼已重置為 {default_password}',
             level=messages.SUCCESS
         )
 

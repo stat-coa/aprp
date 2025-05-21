@@ -1,12 +1,19 @@
 import calendar
 import datetime
 
-from typing import Optional, List
 from dateutil import rrule
+from typing import Optional, List
 from apps.configs.models import AbstractProduct, Source
 from django.db.models import (
-    CASCADE, CharField, DateField, DateTimeField, ForeignKey,
-    FloatField, IntegerField, Model, QuerySet
+    CASCADE,
+    CharField,
+    DateField,
+    DateTimeField,
+    ForeignKey,
+    FloatField,
+    IntegerField,
+    Model,
+    QuerySet
 )
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -70,8 +77,9 @@ class DailyTranQuerySet(QuerySet):
         # date__in 為 SQL 的 IN 條件，只選出 date 欄位的值
         return self.filter(date__in=date_ranges)
 
-    def filter_by_date_lte(self, days: List[datetime.datetime], products: List[AbstractProduct],
-                           sources: Optional[List[Source]] = None) -> List['DailyTran']:
+    def filter_by_date_lte(self, days: List[datetime.datetime],
+                        products: List[AbstractProduct],
+                        sources: Optional[List[Source]] = None) -> List['DailyTran']:
         qs = (
             self.filter(product__in=products, source__in=sources)
             if sources else self.filter(product__in=products)
@@ -103,7 +111,7 @@ class DailyTran(Model):
     avg_price = FloatField(verbose_name=_('Average Price'))
     avg_weight = FloatField(null=True, blank=True, verbose_name=_('Average Weight'))
     volume = FloatField(null=True, blank=True, verbose_name=_('Volume'))
-    date = DateField(auto_now=False, default=timezone.now().replace(tzinfo=None), verbose_name=_('Date'))
+    date = DateField(auto_now=False, default=timezone.now().today, verbose_name=_('Date'))
     update_time = DateTimeField(auto_now=True, null=True, blank=True, verbose_name=_('Updated'))
     not_updated = IntegerField(default=0, verbose_name=_('Not Updated Count'))
     create_time = DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name=_('Create Time'))
@@ -131,7 +139,7 @@ class DailyReport(Model):
     update_time: 2024-12-11 04:34:26.350437+00:00
     create_time: 2024-12-11 02:03:58.949463+00:00
     """
-    date = DateField(auto_now=False, default=timezone.now().today, verbose_name=_('Date')) # timezone.now().replace(tzinfo=None) todo
+    date = DateField(auto_now=False, default=timezone.now().today, verbose_name=_('Date'))
     file_id = CharField(max_length=120, unique=True, verbose_name=_('File ID'))
     update_time = DateTimeField(auto_now=True, null=True, blank=True, verbose_name=_('Updated'))
     create_time = DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name=_('Created'))

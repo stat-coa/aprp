@@ -1,6 +1,6 @@
 import pickle
 
-from typing import List, Union, Optional
+from typing import List, Optional
 from apps.configs.models import Config, AbstractProduct
 from dashboard.caches import redis_instance as cache
 from django.conf import settings
@@ -59,7 +59,7 @@ class Watchlist(Model):
     user = ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=SET_NULL, verbose_name=_('User'))
     is_default = BooleanField(default=False, verbose_name=_('Is Default'))
     watch_all = BooleanField(default=False, verbose_name=_('Watch All'))
-    start_date = DateField(auto_now=False, default=timezone.now().replace(tzinfo=None), verbose_name=_('Start Date'))
+    start_date = DateField(auto_now=False, default=timezone.now().today, verbose_name=_('Start Date'))
     end_date = DateField(auto_now=False, default=timezone.now().today, verbose_name=_('End Date'))
     create_time = DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name=_('Updated'))
     update_time = DateTimeField(auto_now=True, null=True, blank=True, verbose_name=_('Updated'))
@@ -181,7 +181,7 @@ class WatchlistItemQuerySet(QuerySet):
         )
 
         if product:
-            cache_key = f"product{product.id}_filter_by_product"
+            cache_key = f'product{product.id}_filter_by_product'
             items = cache.get(cache_key)
 
             if items is None:
@@ -257,7 +257,9 @@ class MonitorProfile(Model):
     (1)推估生產者最低之直接生產成本，項目包含種苗、飼料餌料、水電油及人力等4項
     (2)監控價格=最低直接生產成本*95％*110%
     action: 1.因漁產品具高替代性，價格上漲時消費者多選擇其他價廉魚產品替代，故產銷穩定多以連續14日低於監控價格啟動
-    2.池邊交易價低於監控價105%持續2週以上：適時辦理電商活動、百大企業及公(私)部門團購、輔導漁會等單位促進校園午餐、國軍副食、矯正機關採購、通路合作展售促銷、輔導生產者加入農民市集等加強多元通路行銷
+    2.池邊交易價低於監控價105%持續2週以上：
+    適時辦理電商活動、百大企業及公(私)部門團購、輔導漁會等單位促進校園午餐、國軍副食、
+    矯正機關採購、通路合作展售促銷、輔導生產者加入農民市集等加強多元通路行銷
     3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
     period: 全年
     is_active: False
@@ -299,7 +301,7 @@ class MonitorProfile(Model):
         """ 此 method 只會由 `apps.dailytrans.dailyreport.py` 使用，用於產製日報表的品項 """
         
         items = (WatchlistItem.objects.filter_by_product(product=self.product)
-                 .filter(parent=self.watchlist))
+                .filter(parent=self.watchlist))
         # items = self.watchlist_items().filter(parent=self.watchlist)
 
         return [item.product for item in items] if items else [self.product]
@@ -309,7 +311,7 @@ class MonitorProfile(Model):
 
         sources = []
         items = (WatchlistItem.objects.filter_by_product(product=self.product)
-                 .filter(parent=self.watchlist))
+                .filter(parent=self.watchlist))
 
         for i in items:
             item: WatchlistItem = i

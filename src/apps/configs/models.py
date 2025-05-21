@@ -95,6 +95,7 @@ class AbstractProduct(Model):
                 products = products.filter(id__in=watchlist.related_product_ids)
 
             cache.set(cache_key, products.order_by('id'), dump=True)
+
         else:
             products = pickle.loads(products) # 反序列化去讀取快取內容
 
@@ -117,6 +118,7 @@ class AbstractProduct(Model):
         ).select_subclasses().order_by('id')
 
             cache.set(cache_key, products, dump=True)
+
         else:
             products = pickle.loads(products)
 
@@ -161,6 +163,7 @@ class AbstractProduct(Model):
                 types = pickle.loads(types)
 
             return types
+
         elif self.type:
             cache_key = f'product{self.id}_type'
 
@@ -173,6 +176,7 @@ class AbstractProduct(Model):
                 _type = pickle.loads(_type)
 
             return _type
+
         else: # 沒有子品項也沒有 Type
             return self.objects.none() # 回傳一個空的 QuerySet
 
@@ -249,7 +253,6 @@ class AbstractProduct(Model):
         """
 
         ids = list(self.children().values_list('id', flat=True)) # 會先取得第一層的子品項 id 轉成 list
-
         lock = False
         product = self
 
@@ -289,6 +292,7 @@ class Config(Model):
     def get_cache_key(self, watchlist=None):
         return (
             f'watchlist{watchlist.id}_config{self.id}_lv1_products'
+
             if watchlist
             else f'config{self.id}_lv1_products'
         )
@@ -330,6 +334,7 @@ class Config(Model):
                 products = products.filter(id__in=watchlist.related_product_ids)
 
             cache.set(cache_key, products.order_by('id'), dump=True)
+
         else:
             products = pickle.loads(products)
 
@@ -373,6 +378,7 @@ class SourceQuerySet(QuerySet):
         # 如果傳入的名稱不是字串，會有 TypeError 的提示
         if not isinstance(name, str):
             raise TypeError
+
         name = name.replace('台', '臺')
 
         # contains 為 SQL 的 LIKE '%Value%' 等同於「欄位包含這段文字」
@@ -628,7 +634,7 @@ class Last5YearsItems(Model):
     def __str__(self):
         return self.name
 
-def instance_post_save(sender, instance, created, **kwargs): # todo
+def instance_post_save(sender, instance, created, **kwargs):
     if kwargs.get('raw'):
         instance.save()
         return

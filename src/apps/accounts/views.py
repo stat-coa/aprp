@@ -1,7 +1,7 @@
 import logging
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
+
 from django.contrib import messages
 from django.contrib.auth import (
     authenticate,
@@ -9,6 +9,7 @@ from django.contrib.auth import (
     login,
     logout
 )
+from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render, redirect
 from django.utils.translation import ugettext_lazy as _

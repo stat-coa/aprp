@@ -4,16 +4,8 @@ from django.forms import ModelForm
 from django.forms.utils import ErrorList
 
 from .models import (
-    AbstractProduct,
-    Config,
-    Source,
-    Type,
-    Unit,
-    Chart,
-    Festival,
-    FestivalName,
-    FestivalItems,
-    Last5YearsItems,
+    AbstractProduct, Chart, Config, Festival, FestivalName,
+    FestivalItems, Last5YearsItems, Source, Type, Unit,
 )
 
 
@@ -22,9 +14,15 @@ class AbstractProductModelForm(ModelForm):
         model = AbstractProduct
         exclude = ['update_time']
 
-    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
-                 label_suffix=None, empty_permitted=False, instance=None):
-        super().__init__(data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted, instance)
+    def __init__(
+            self, data=None, files=None, auto_id='id_%s', prefix=None,
+            initial=None, error_class=ErrorList, label_suffix=None,
+            empty_permitted=False, instance=None
+    ):
+        super().__init__(
+            data, files, auto_id, prefix, initial, error_class,
+            label_suffix, empty_permitted, instance
+        )
 
         # forcing add the `id` field can be edited
         self.fields['id'] = forms.IntegerField(widget=forms.TextInput())
@@ -48,10 +46,14 @@ class AbstractProductModelForm(ModelForm):
 
 class AbstractProductAdmin(admin.ModelAdmin):
     form = AbstractProductModelForm
-    list_display = ['id', 'name', 'code', 'config', 'type', 'parent', 'track_item', 'unit']
+    list_display = [
+        'id', 'name', 'code', 'config', 'type', 'parent', 'track_item', 'unit'
+    ]
     list_editable = ['name', 'code', 'track_item']
     list_filter = ('config', 'type', 'track_item')
-    fields = ['id', 'name', 'code', 'config', 'type', 'parent', 'track_item', 'unit']
+    fields = [
+        'id', 'name', 'code', 'config', 'type', 'parent', 'track_item', 'unit'
+    ]
 
     search_fields = (
         'id',
@@ -105,7 +107,9 @@ class UnitModelForm(ModelForm):
 
 class UnitAdmin(admin.ModelAdmin):
     form = UnitModelForm
-    list_display = ['id', 'price_unit', 'volume_unit', 'weight_unit', 'update_time']
+    list_display = [
+        'id', 'price_unit', 'volume_unit', 'weight_unit', 'update_time'
+    ]
     list_editable = ['price_unit', 'volume_unit', 'weight_unit']
 
 
@@ -130,7 +134,9 @@ class FestivalModelForm(ModelForm):
 
 class FestivalAdmin(admin.ModelAdmin):
     form = FestivalModelForm
-    list_display = ['id', 'roc_year', 'name', 'enable', 'update_time', 'create_time']
+    list_display = [
+        'id', 'roc_year', 'name', 'enable', 'update_time', 'create_time'
+    ]
     list_editable = ['roc_year', 'name', 'enable']
 
 
@@ -143,17 +149,11 @@ class FestivalNameModelForm(ModelForm):
 
 class FestivalNameAdmin(admin.ModelAdmin):
     form = FestivalNameModelForm
-    list_display = ['id',
-                    'name',
-                    'lunarmonth',
-                    'lunarday',
-                    'enable',
-                    'update_time',
-                    'create_time']
-    list_editable = ['name',
-                    'lunarmonth',
-                    'lunarday',
-                    'enable']
+    list_display = [
+        'id', 'name', 'lunarmonth', 'lunarday', 'enable',
+        'update_time', 'create_time'
+    ]
+    list_editable = ['name', 'lunarmonth', 'lunarday', 'enable']
 
 class FestivalItemsModelForm(ModelForm):
 
@@ -163,7 +163,9 @@ class FestivalItemsModelForm(ModelForm):
 
 class FestivalItemsAdmin(admin.ModelAdmin):
     form = FestivalItemsModelForm
-    list_display = ['id', 'order_sn', 'name', 'enable', 'update_time', 'create_time']
+    list_display = [
+        'id', 'order_sn', 'name', 'enable', 'update_time', 'create_time'
+    ]
     list_editable = ['name', 'enable']
 
 class Last5YearsItemsModelForm(ModelForm):
@@ -171,9 +173,15 @@ class Last5YearsItemsModelForm(ModelForm):
         model = Last5YearsItems
         exclude = ['update_time']
 
-    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList,
-                 label_suffix=None, empty_permitted=False, instance=None):
-        super().__init__(data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted, instance)
+    def __init__(
+            self, data=None, files=None, auto_id='id_%s', prefix=None,
+            initial=None,error_class=ErrorList, label_suffix=None,
+            empty_permitted=False, instance=None
+    ):
+        super().__init__(
+            data, files, auto_id, prefix, initial, error_class,
+            label_suffix, empty_permitted, instance
+        )
 
         self.fields['product_id'].choices = self.product_field_choices
         self.fields['source'].choices = self.source_field_choices
@@ -193,7 +201,9 @@ class Last5YearsItemsModelForm(ModelForm):
 
 class Last5YearsItemsAdmin(admin.ModelAdmin):
     form = Last5YearsItemsModelForm
-    list_display = ['id', 'name', 'enable', 'sort_value', 'update_time', 'create_time']
+    list_display = [
+        'id', 'name', 'enable', 'sort_value', 'update_time', 'create_time'
+    ]
     list_editable = ['name', 'enable', 'sort_value']
     fields = ['product_id', 'source', 'name', 'enable', 'sort_value']
 

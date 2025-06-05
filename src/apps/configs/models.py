@@ -2,16 +2,8 @@ import pickle
 
 from dashboard.caches import redis_instance as cache
 from django.db.models import (
-    Model,
-    QuerySet,
-    SET_NULL,
-    CharField,
-    DateTimeField,
-    ForeignKey,
-    ManyToManyField,
-    IntegerField,
-    BooleanField,
-    Q,
+    BooleanField, CharField, DateTimeField, ForeignKey,
+    IntegerField, ManyToManyField, Model, Q, QuerySet, SET_NULL,
 )
 from django.db.models.signals import post_save
 from django.forms.models import model_to_dict

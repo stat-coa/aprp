@@ -1,13 +1,6 @@
-from rest_framework.serializers import (
-    ModelSerializer,
-)
+from rest_framework.serializers import ModelSerializer
 from apps.configs.models import (
-    Config,
-    AbstractProduct,
-    Chart,
-    Type,
-    Source,
-    Unit,
+    AbstractProduct, Config, Chart, Source, Type, Unit,
 )
 
 

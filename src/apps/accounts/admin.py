@@ -64,6 +64,7 @@ class GroupListFilter(SimpleListFilter):
         human-readable name for the option that will appear
         in the right sidebar.
         """
+
         return [(group.id, group.name) for group in Group.objects.all()]
 
     def queryset(self, request, queryset):
@@ -72,6 +73,7 @@ class GroupListFilter(SimpleListFilter):
         provided in the query string and retrievable via
         `self.value()`.
         """
+
         # Compare the requested value (either '80s' or 'other')
         # to decide how to filter the queryset.
         if self.value():

@@ -7,11 +7,13 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
+
 KEY_MIN = getattr(settings, "KEY_MIN", 30)
 
 
-def code_generator(size=KEY_MIN,
-                   chars=string.ascii_lowercase + string.digits):
+def code_generator(
+        size=KEY_MIN, chars=string.ascii_lowercase + string.digits
+):
     return ''.join(random.choice(chars) for _ in range(size))
 
 

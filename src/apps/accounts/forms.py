@@ -1,13 +1,11 @@
 from django import forms
 from django.core.validators import RegexValidator
-from django.contrib.auth import (
-    authenticate,
-    get_user_model
-)
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+
 from . import models
 
 
@@ -54,12 +52,8 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = [
-            'username',
-            'email',
-            'reset_email',
-            'first_name',
-            'last_name',
-            'group'
+            'username', 'email', 'reset_email',
+            'first_name', 'last_name', 'group'
         ]
 
     def clean(self, *args, **kwargs):
@@ -91,7 +85,11 @@ class UserEditForm(forms.ModelForm):
             if dns != group.email_dns:
                 self.add_error(
                     'group',
-                    (_('To use this group, please change your email to this unit:') + group.name)
+                    (
+                            _(
+                                'To use this group, please change your email to this unit:'
+                            ) + group.name
+                    )
                 )
 
         return super(UserEditForm, self).clean()

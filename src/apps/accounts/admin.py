@@ -6,6 +6,7 @@ from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
 from django.contrib.auth.models import Group, User
 from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
+
 from . import models
 
 

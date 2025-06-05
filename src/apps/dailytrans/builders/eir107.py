@@ -1,11 +1,14 @@
-from django.db.models import Q
 import datetime
 import json
-from .utils import date_transfer
-from .abstract import AbstractApi
+
+from django.db.models import Q
+
 from apps.dailytrans.models import DailyTran
+from .abstract import AbstractApi
+from .utils import date_transfer
 
 
+""" 羊-批發 """
 class Api(AbstractApi):
 
     # Settings
@@ -25,8 +28,13 @@ class Api(AbstractApi):
     }
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
-        super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
-                                  logger='aprp', logger_type_code=logger_type_code)
+        super(Api, self).__init__(
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger='aprp',
+            logger_type_code=logger_type_code
+        )
 
     def hook(self, dic):
 
@@ -45,16 +53,24 @@ class Api(AbstractApi):
                 avg_price=dic.get('avgPrice'),
                 avg_weight=dic.get('avgWeight'),
                 volume=dic.get('quantity'),
-                date=date_transfer(sep=self.SEP, string=dic.get('transDate'), roc_format=self.ROC_FORMAT)
+                date=date_transfer(
+                    sep=self.SEP,
+                    string=dic.get('transDate'),
+                    roc_format=self.ROC_FORMAT
+                )
             )
             return tran
         else:
             if not product:
-                self.LOGGER.warning('Cannot Match Product: "%s" In Dictionary %s'
-                                    % (product_code, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Product: "%s" In Dictionary %s' % (product_code, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             if not source:
-                self.LOGGER.warning('Cannot Match Source: "%s" In Dictionary %s'
-                                    % (source_name, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Source: "%s" In Dictionary %s' % (source_name, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             return dic
 
     def request(self, date=None, source=None, code=None):
@@ -71,10 +87,12 @@ class Api(AbstractApi):
             if not isinstance(date, datetime.date):
                 raise NotImplementedError
 
-            date = date_transfer(sep=self.SEP,
-                                 date=date,
-                                 roc_format=self.ROC_FORMAT,
-                                 zfill=self.ZFILL)
+            date = date_transfer(
+                sep=self.SEP,
+                date=date,
+                roc_format=self.ROC_FORMAT,
+                zfill=self.ZFILL
+            )
             s = dispatch(start)
             url = s.join((url, self.TRANS_DATE_FILTER % date))
 
@@ -103,20 +121,26 @@ class Api(AbstractApi):
             if isinstance(obj, DailyTran):
                 try:
                     # update if exists
-                    daily_tran_qs = DailyTran.objects.filter(Q(date__exact=obj.date)
-                                                             & Q(product=obj.product))
+                    daily_tran_qs = DailyTran.objects.filter(
+                        Q(date__exact=obj.date) & Q(product=obj.product)
+                    )
                     if obj.source:
                         daily_tran_qs = daily_tran_qs.filter(source=obj.source)
 
                     if daily_tran_qs.count() > 1:
                         # log as duplicate
                         items = str(daily_tran_qs.values_list('id', flat=True))
-                        self.LOGGER.warning('Find duplicate DailyTran item: %s' % items, extra=self.LOGGER_EXTRA)
+                        self.LOGGER.warning(
+                            'Find duplicate DailyTran item: %s' % items,
+                            extra=self.LOGGER_EXTRA
+                        )
 
                     elif daily_tran_qs.count() == 1:
-                        daily_tran_qs.update(avg_weight=obj.avg_weight,
-                                             avg_price=obj.avg_price,
-                                             volume=obj.volume)
+                        daily_tran_qs.update(
+                            avg_weight=obj.avg_weight,
+                            avg_price=obj.avg_price,
+                            volume=obj.volume
+                        )
                     else:
                         obj.save()
                 except Exception as e:

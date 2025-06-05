@@ -16,6 +16,7 @@ from .abstract import AbstractApi
 from .utils import date_transfer
 
 
+""" 漁-批發 """
 class Api(AbstractApi):
     # Settings
     API_NAME = 'eir032'
@@ -31,8 +32,13 @@ class Api(AbstractApi):
     NAME_FILTER = 'TypeName=%s'
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
-        super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
-                                  logger='aprp', logger_type_code=logger_type_code)
+        super(Api, self).__init__(
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger='aprp',
+            logger_type_code=logger_type_code
+        )
 
     def hook(self, dic):
 
@@ -53,16 +59,22 @@ class Api(AbstractApi):
                 low_price=dic.get('下價'),
                 avg_price=dic.get('平均價'),
                 volume=dic.get('交易量'),
-                date=date_transfer(sep=self.SEP, string=dic.get('交易日期'), roc_format=self.ROC_FORMAT)
+                date=date_transfer(
+                    sep=self.SEP, string=dic.get('交易日期'), roc_format=self.ROC_FORMAT
+                )
             )
             return tran
         else:
             if not product and dic.get('魚貨名稱') != "休市":
-                self.LOGGER.warning('Cannot Match Product: "%s" In Dictionary %s'
-                                    % (product_code, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Product: "%s" In Dictionary %s' % (product_code, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             if not source:
-                self.LOGGER.warning('Cannot Match Source: "%s" In Dictionary %s'
-                                    % (source_name, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Source: "%s" In Dictionary %s' % (source_name, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             return dic
 
     def request(self, start_date=None, end_date=None, source=None, code=None, name=None):
@@ -71,10 +83,12 @@ class Api(AbstractApi):
             if not isinstance(start_date, datetime.date):
                 raise NotImplementedError
 
-            start_date_str = date_transfer(sep=self.SEP,
-                                           date=start_date,
-                                           roc_format=self.ROC_FORMAT,
-                                           zfill=self.ZFILL)
+            start_date_str = date_transfer(
+                sep=self.SEP,
+                date=start_date,
+                roc_format=self.ROC_FORMAT,
+                zfill=self.ZFILL
+            )
 
             url = '&'.join((url, self.START_DATE_FILTER % start_date_str))
 
@@ -82,10 +96,12 @@ class Api(AbstractApi):
             if not isinstance(end_date, datetime.date):
                 raise NotImplementedError
 
-            end_date_str = date_transfer(sep=self.SEP,
-                                         date=end_date,
-                                         roc_format=self.ROC_FORMAT,
-                                         zfill=self.ZFILL)
+            end_date_str = date_transfer(
+                sep=self.SEP,
+                date=end_date,
+                roc_format=self.ROC_FORMAT,
+                zfill=self.ZFILL
+            )
 
             url = '&'.join((url, self.END_DATE_FILTER % end_date_str))
 
@@ -112,9 +128,11 @@ class Api(AbstractApi):
             except Exception as e:
                 self.LOGGER.exception(f'exception: {e}, response: {response.text}', extra=self.LOGGER_EXTRA)
 
-        data = pd.DataFrame(data,
-                            columns=['上價', '中價', '下價', '平均價', '交易量', '交易日期', '品種代碼', '市場名稱',
-                                     '魚貨名稱'])
+        data = pd.DataFrame(
+            data,columns=[
+                '上價', '中價', '下價', '平均價', '交易量', '交易日期', '品種代碼', '市場名稱', '魚貨名稱'
+            ]
+        )
         data = data[data['品種代碼'].isin(self.target_items)]
         try:
             if not data.empty:
@@ -141,14 +159,16 @@ class Api(AbstractApi):
                         self._update_data(value, existed_tran)
                     else:
                         existed_tran.delete()
-                        self.LOGGER.warning(msg=f"The DailyTran data of the product: {value['product__code']} "
-                                                f"on {value['date'].strftime('%Y-%m-%d')} "
-                                                f"from source: {value['source__name']} with\n"
-                                                f"up_price: {value['up_price_y']}\n"
-                                                f"mid_price: {value['mid_price_y']}\n"
-                                                f"low_price: {value['low_price_y']}\n"
-                                                f"avg_price: {value['avg_price_y']}\n"
-                                                f"volume: {value['volume_y']} has been deleted.")
+                        self.LOGGER.warning(
+                            msg=f'The DailyTran data of the product: {value["product__code"]} '
+                                f'on {value["date"].strftime("%Y-%m-%d")} '
+                                f'from source: {value["source__name"]} with\n'
+                                f'up_price: {value["up_price_y"]}\n'
+                                f'mid_price: {value["mid_price_y"]}\n'
+                                f'low_price: {value["low_price_y"]}\n'
+                                f'avg_price: {value["avg_price_y"]}\n'
+                                f'volume: {value["volume_y"]} has been deleted.'
+                        )
                 except DailyTran.DoesNotExist:
                     self._save_new_data(value)
                 except Exception as e:
@@ -167,16 +187,32 @@ class Api(AbstractApi):
             '魚貨名稱': 'product__name'
         }
         data.rename(columns=columns, inplace=True)
-        data['date'] = data['date'].apply(lambda x: datetime.datetime.strptime(
-            f'{int(x) // 10000 + 1911}-{(int(x) // 100) % 100:02d}-{int(x) % 100:02d}', '%Y-%m-%d').date())
+        data['date'] = data['date'].apply(
+            lambda x: datetime.datetime.strptime(
+            f'{int(x) // 10000 + 1911}-{(int(x) // 100) % 100:02d}-{int(x) % 100:02d}', '%Y-%m-%d'
+            ).date()
+        )
         data['source__name'] = data['source__name'].str.replace('台', '臺')
         data['product__code'] = data['product__code'].astype(str)
 
-        data_db = DailyTran.objects.filter(date=data['date'].iloc[0], product__type=1, product__config=self.CONFIG)
-        data_db = pd.DataFrame(list(data_db.values('id', 'product__id', 'product__code', 'up_price', 'mid_price',
-                                                   'low_price', 'avg_price', 'volume', 'date', 'source__name'))) \
-            if data_db else pd.DataFrame(columns=['id', 'product__id', 'product__code', 'up_price', 'mid_price',
-                                                  'low_price', 'avg_price', 'volume', 'date', 'source__name'])
+        data_db = DailyTran.objects.filter(
+            date=data['date'].iloc[0],
+            product__type=1,
+            product__config=self.CONFIG
+        )
+        data_db = pd.DataFrame(
+            list(data_db.values(
+                'id', 'product__id', 'product__code', 'up_price', 'mid_price',
+                'low_price', 'avg_price', 'volume', 'date', 'source__name'
+            )
+            )
+        ) \
+            if data_db else pd.DataFrame(
+            columns=[
+                'id', 'product__id', 'product__code', 'up_price', 'mid_price',
+                'low_price', 'avg_price', 'volume', 'date', 'source__name'
+            ]
+        )
 
         return data.merge(data_db, on=['date', 'product__code', 'source__name'], how='outer')
 
@@ -209,9 +245,7 @@ class Api(AbstractApi):
 
 
 class HTMLParser:
-    """
-    此 class 用於解析 HTML 內容，並取出需要的資料所設計。(使用 BeautifulSoup4)
-    """
+    """ 此 class 用於解析 HTML 內容，並取出需要的資料所設計。(使用 BeautifulSoup4) """
 
     TABLE_ID = 'ltable'
 
@@ -345,9 +379,7 @@ class HTMLParser:
 
     @property
     def headers(self) -> List[str]:
-        """
-        將所有 <th> 標籤的文字(欄位名稱)取出，並去除換行符號
-        """
+        """ 將所有 <th> 標籤的文字(欄位名稱)取出，並去除換行符號 """
 
         return [th.text.replace('\n', '') for th in self.all_th] if self.all_th else []
 
@@ -384,9 +416,7 @@ class HTMLParser:
             return None
 
     def parse_table(self) -> Optional[List[OrderedDict]]:
-        """
-        將指定的 HTML table 解析後，取出需要的資料
-        """
+        """ 將指定的 HTML table 解析後，取出需要的資料 """
 
         # 若沒有找到資料則直接返回
         if not self.all_tr:
@@ -418,9 +448,10 @@ class ScrapperApi(Api):
     SLEEP_TIME = 3
     URL = 'https://efish.fa.gov.tw/efish/statistics/daysinglemarketmultifish.htm'
     HEADERS = {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                      'AppleWebKit/537.36 (KHTML, like Gecko)'
-                      'Chrome/132.0.0.0 Safari/537.36'
+        'user-agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko)'
+            'Chrome/132.0.0.0 Safari/537.36'
     }
 
     SOURCES = OrderedDict({
@@ -455,7 +486,10 @@ class ScrapperApi(Api):
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
         super(ScrapperApi, self).__init__(
-            model=model, config_code=config_code, type_id=type_id, logger_type_code=logger_type_code
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger_type_code=logger_type_code
         )
 
         self.__query_date: Optional[datetime.date] = None
@@ -512,14 +546,14 @@ class ScrapperApi(Api):
 
         return [
             {
-                "dateStr": self.request_date_str,
-                "calendarType": "tw",
-                "year": self.roc_year,
-                "month": self.month,
-                "day": self.day,
-                "mid": key,
-                "numbers": "999",
-                "orderby": "w",
+                'dateStr': self.request_date_str,
+                'calendarType': 'tw',
+                'year': self.roc_year,
+                'month': self.month,
+                'day': self.day,
+                'mid': key,
+                'numbers': '999',
+                'orderby': 'w',
             }
             for key in self.SOURCES.keys()
         ]
@@ -541,9 +575,7 @@ class ScrapperApi(Api):
         ]
 
     def _make_request(self, url, params, headers) -> Response:
-        """
-        發送 POST 請求，並回傳 response 物件，若發生錯誤則嘗試重新連線
-        """
+        """ 發送 POST 請求，並回傳 response 物件，若發生錯誤則嘗試重新連線 """
 
         retry_count = 0
 
@@ -554,14 +586,20 @@ class ScrapperApi(Api):
                 self.LOGGER_EXTRA['request_url'] = resp.request.url
 
                 if resp.status_code != 200:
-                    self.LOGGER.warning(f'Connection refused, retry {retry_count} time', extra=self.LOGGER_EXTRA)
+                    self.LOGGER.warning(
+                        f'Connection refused, retry {retry_count} time',
+                        extra=self.LOGGER_EXTRA
+                    )
                     time.sleep(self.SLEEP_TIME)
 
                     continue
 
                 return resp
             except Exception as e:
-                self.LOGGER.exception(f'exception: {e}, retry {retry_count} time', extra=self.LOGGER_EXTRA)
+                self.LOGGER.exception(
+                    f'exception: {e}, retry {retry_count} time',
+                    extra=self.LOGGER_EXTRA
+                )
 
         return Response()
 
@@ -575,13 +613,16 @@ class ScrapperApi(Api):
                 msg = self.SOURCES.get(parser.source_code) if resp.request else 'No Request'
                 self.LOGGER.warning(
                     f'Connection Refused, Status Code: {resp.status_code}, '
-                    f'source: {msg}', extra=self.LOGGER_EXTRA
+                    f'source: {msg}',
+                    extra=self.LOGGER_EXTRA
                 )
 
         return self.df_result
 
     def requests(
-            self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
+            self,
+            start_date: Optional[datetime.date] = None,
+            end_date: Optional[datetime.date] = None
     ) -> List[Response]:
         if start_date is None and end_date is None:
             raise ValueError('start_date or end_date must be set')
@@ -591,7 +632,14 @@ class ScrapperApi(Api):
 
         # 為增加效率，使用 ThreadPoolExecutor 進行多執行緒請求
         with ThreadPoolExecutor(max_workers=6) as executor:
-            return list(executor.map(self._make_request, self.urls_list, self.params_list, self.headers_list))
+            return list(
+                executor.map(
+                    self._make_request,
+                    self.urls_list,
+                    self.params_list,
+                    self.headers_list
+                )
+            )
 
     def loads(self, responses: List[Response]):
         df = self._convert_to_dataframe(responses)

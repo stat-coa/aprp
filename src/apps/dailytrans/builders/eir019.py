@@ -1,14 +1,16 @@
-from django.db.models import Q
 import datetime
 import json
 import math
-from .utils import date_transfer
-from .abstract import AbstractApi
+
+from django.db.models import Q
+
 from apps.dailytrans.models import DailyTran
+from .abstract import AbstractApi
+from .utils import date_transfer
 
 
+""" 豬-批發 """
 class Api(AbstractApi):
-
     # Settings
     API_NAME = 'eir019'
     ZFILL = True
@@ -26,11 +28,15 @@ class Api(AbstractApi):
     COLUMN_SEP = '-'
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
-        super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
-                                  logger='aprp', logger_type_code=logger_type_code)
+        super(Api, self).__init__(
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger='aprp',
+            logger_type_code=logger_type_code,
+        )
 
     def hook(self, dic):
-
         def create_tran(obj, source):
             code = obj.code
             if code == '規格豬(75公斤以上)':
@@ -39,7 +45,7 @@ class Api(AbstractApi):
                 volume_column = self.COLUMN_SEP.join((code, '總數'))
             else:
                 volume_column = self.COLUMN_SEP.join((code, self.VOLUME_COLUMN))
-            
+
             avg_weight_column = self.COLUMN_SEP.join((code, self.AVG_WEIGHT_COLUMN))
             avg_price_column = self.COLUMN_SEP.join((code, self.AVG_PRICE_COLUMN))
             tran = DailyTran(
@@ -48,7 +54,9 @@ class Api(AbstractApi):
                 volume=dic.get(volume_column),
                 avg_weight=dic.get(avg_weight_column),
                 avg_price=float(dic.get(avg_price_column)),
-                date=date_transfer(sep=self.SEP, string=dic.get('交易日期'), roc_format=True)
+                date=date_transfer(
+                    sep=self.SEP, string=dic.get('交易日期'), roc_format=True
+                ),
             )
 
             return tran
@@ -70,12 +78,16 @@ class Api(AbstractApi):
                         tran = create_tran(obj, source)
                         lst.append(tran)
                     except Exception as e:
-                        self.LOGGER.exception("Parsing Error: %s, %s" % (dic, e), extra=self.LOGGER_EXTRA)
+                        self.LOGGER.exception(
+                            'Parsing Error: %s, %s' % (dic, e), extra=self.LOGGER_EXTRA
+                        )
             return lst
         else:
             # log as cannot find source item
-            self.LOGGER.warning('Cannot Match Source: "%s" In Dictionary %s'
-                                % (source_name, dic), extra=self.LOGGER_EXTRA)
+            self.LOGGER.warning(
+                'Cannot Match Source: "%s" In Dictionary %s' % (source_name, dic),
+                extra=self.LOGGER_EXTRA,
+            )
             return dic
 
     def request(self, date, source=None):
@@ -85,10 +97,9 @@ class Api(AbstractApi):
             if not isinstance(date, datetime.date):
                 raise NotImplementedError
 
-            date = date_transfer(sep=self.SEP,
-                                 date=date,
-                                 roc_format=self.ROC_FORMAT,
-                                 zfill=self.ZFILL)
+            date = date_transfer(
+                sep=self.SEP, date=date, roc_format=self.ROC_FORMAT, zfill=self.ZFILL
+            )
 
             url = '&'.join((url, self.TRANS_DATE_FILTER % date))
 
@@ -107,20 +118,26 @@ class Api(AbstractApi):
                 try:
                     if isinstance(obj, DailyTran):
                         # update if exists
-                        daily_tran_qs = DailyTran.objects.filter(Q(date__exact=obj.date)
-                                                                 & Q(product=obj.product))
+                        daily_tran_qs = DailyTran.objects.filter(
+                            Q(date__exact=obj.date) & Q(product=obj.product)
+                        )
                         if obj.source:
                             daily_tran_qs = daily_tran_qs.filter(source=obj.source)
 
                         if daily_tran_qs.count() > 1:
                             # log as duplicate
                             items = str(daily_tran_qs.values_list('id', flat=True))
-                            self.LOGGER.warning('Find duplicate DailyTran item: %s' % items, extra=self.LOGGER_EXTRA)
+                            self.LOGGER.warning(
+                                'Find duplicate DailyTran item: %s' % items,
+                                extra=self.LOGGER_EXTRA,
+                            )
 
                         elif daily_tran_qs.count() == 1:
-                            daily_tran_qs.update(avg_price=obj.avg_price,
-                                                 volume=obj.volume,
-                                                 avg_weight=obj.avg_weight)
+                            daily_tran_qs.update(
+                                avg_price=obj.avg_price,
+                                volume=obj.volume,
+                                avg_weight=obj.avg_weight,
+                            )
                         else:
                             # 宜蘭縣、新竹縣、苗栗縣、花蓮縣155公斤以上已納入規格豬，這裡不進以排除重複計算
                             if obj.product.id == 70005 and obj.source.id in [40007, 40009, 40010, 40017]:
@@ -128,6 +145,9 @@ class Api(AbstractApi):
                             elif (obj.volume or 0) + (obj.avg_price or 0) + (obj.avg_weight or 0) > 0:
                                 obj.save()
                             elif not math.isclose(obj.volume + obj.avg_price + obj.avg_weight, 0):
-                                self.LOGGER.warning('Find not valid hog DailyTran item: %s' % str(obj), extra=self.LOGGER_EXTRA)
+                                self.LOGGER.warning(
+                                    'Find not valid hog DailyTran item: %s' % str(obj),
+                                    extra=self.LOGGER_EXTRA,
+                                )
                 except Exception as e:
                     self.LOGGER.exception(e, extra=self.LOGGER_EXTRA)

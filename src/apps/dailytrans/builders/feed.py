@@ -1,11 +1,14 @@
-from django.db.models import Q
 import datetime
 import json
-from .utils import date_transfer
-from .abstract import AbstractApi
+
+from django.db.models import Q
+
 from apps.dailytrans.models import DailyTran
+from .abstract import AbstractApi
+from .utils import date_transfer
 
 
+# 飼料是從中央畜產會登入帳號爬蟲取得
 class Api(AbstractApi):
 
     # Settings
@@ -19,8 +22,13 @@ class Api(AbstractApi):
     CODE_FILTER = '$filter=item+like+%s'
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
-        super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
-                                  logger='aprp', logger_type_code=logger_type_code)
+        super(Api, self).__init__(
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger='aprp',
+            logger_type_code=logger_type_code
+        )
 
     def hook(self, dic):
 
@@ -35,13 +43,19 @@ class Api(AbstractApi):
             tran = DailyTran(
                 product=product,
                 avg_price=dic.get('price'),
-                date=date_transfer(sep=self.SEP, string=dic.get('date'), roc_format=self.ROC_FORMAT)
+                date=date_transfer(
+                    sep=self.SEP,
+                    string=dic.get('date'),
+                    roc_format=self.ROC_FORMAT
+                )
             )
             return tran
         else:
             if not product:
-                self.LOGGER.warning('Cannot Match Product: "%s" In Dictionary %s'
-                                    % (product_code, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Product: "%s" In Dictionary %s' % (product_code, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             return dic
 
     def request(self, date=None, code=None):
@@ -52,10 +66,12 @@ class Api(AbstractApi):
             if not isinstance(date, datetime.date):
                 raise NotImplementedError
 
-            date_str = date_transfer(sep=self.SEP,
-                                     date=date,
-                                     roc_format=self.ROC_FORMAT,
-                                     zfill=self.ZFILL)
+            date_str = date_transfer(
+                sep=self.SEP,
+                date=date,
+                roc_format=self.ROC_FORMAT,
+                zfill=self.ZFILL
+            )
 
             url = '&'.join((url, self.DATE_FILTER % date_str))
 
@@ -76,14 +92,18 @@ class Api(AbstractApi):
             if isinstance(obj, DailyTran):
                 try:
                     # update if exists
-                    daily_tran_qs = DailyTran.objects.filter(Q(date__exact=obj.date)
-                                                             & Q(product=obj.product))
+                    daily_tran_qs = DailyTran.objects.filter(
+                        Q(date__exact=obj.date) & Q(product=obj.product)
+                    )
 
                     if daily_tran_qs.count() > 1:
                         # log as duplicate
                         items = str(daily_tran_qs.values_list('id', flat=True))
 
-                        self.LOGGER.warning('Find duplicate DailyTran item: %s' % items, extra=self.LOGGER_EXTRA)
+                        self.LOGGER.warning(
+                            'Find duplicate DailyTran item: %s' % items,
+                            extra=self.LOGGER_EXTRA
+                        )
 
                     elif daily_tran_qs.count() == 1:
                         daily_tran_qs.update(avg_price=obj.avg_price)

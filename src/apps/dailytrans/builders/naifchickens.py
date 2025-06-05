@@ -1,21 +1,21 @@
-from django.db.models import Q
-import datetime
 import json
-from .utils import date_transfer
-from .abstract import AbstractApi
-from apps.dailytrans.models import DailyTran
-
-import pandas as pd
-import numpy as np
 import os
 import time
-import requests
+
+import pandas as pd
 import pytesseract
-from PIL import Image
+import requests
 from bs4 import BeautifulSoup as bs
 from django.conf import settings
+from django.db.models import Q
+from PIL import Image
+
+from apps.dailytrans.models import DailyTran
+from .abstract import AbstractApi
+from .utils import date_transfer
 
 
+# 環南市場雞隻等數據是從中央畜產會登入帳號爬蟲取得
 class Api(AbstractApi):
     # Settings
     API_NAME = 'naifchickens'
@@ -25,8 +25,13 @@ class Api(AbstractApi):
     headers = {'User-Agent': settings.USER_AGENT, }
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
-        super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
-                                  logger='aprp', logger_type_code=logger_type_code)
+        super(Api, self).__init__(
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger='aprp',
+            logger_type_code=logger_type_code
+        )
 
     def hook(self, dic):
 
@@ -43,16 +48,30 @@ class Api(AbstractApi):
                 avg_price=dic.get('price'),
                 avg_weight=dic.get('weight'),
                 volume=dic.get('volume'),
-                date=date_transfer(sep=self.SEP, string=dic.get('date'), roc_format=self.ROC_FORMAT)
+                date=date_transfer(
+                    sep=self.SEP,
+                    string=dic.get('date'),
+                    roc_format=self.ROC_FORMAT
+                )
             )
             return tran
         else:
             if not product:
-                self.LOGGER.warning('Cannot Match Product: "%s" In Dictionary %s'
-                                    % (product_code, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Product: "%s" In Dictionary %s' % (product_code, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             return dic
 
-    def request(self, start_date=None, end_date=None, id=None, source=None, code=None, name=None):
+    def request(
+            self,
+            start_date=None,
+            end_date=None,
+            id=None,
+            source=None,
+            code=None,
+            name=None
+    ):
 
         if 150001 <= id <= 150002:  # 環南市場:環南-白肉雞/環南-土雞
             login_fail_flag = False
@@ -126,19 +145,23 @@ class Api(AbstractApi):
                         if k == '120':  # 環南-白肉雞
                             r4 = ss.get(
                                 f'https://www.naif.org.tw/infoWhiteChicken.aspx?sYear={y}&sMonth={m}&btnSearch=%E6%90%9C%E5%B0%8B&frontMenuID=120&frontTitleMenuID=37',
-                                headers=self.headers)
+                                headers=self.headers
+                            )
                         if k == '137':  # 環南-土雞
                             r4 = ss.get(
                                 f'https://www.naif.org.tw/infoEndemicChicken.aspx?sYear={y}&sMonth={m}&btnSearch=%E6%90%9C%E5%B0%8B&frontMenuID=137&frontTitleMenuID=37',
-                                headers=self.headers)
+                                headers=self.headers
+                            )
                         soup = bs(r4.text, 'html.parser')
                         table = soup.find('table', {'cellspacing': '1'})
                         alert = soup.find('script').string
 
                         # 登入失敗
                         if alert and '請先登入會員!!' in alert:
-                            self.LOGGER.warning(f'Login failed for naif, captcha : {captcha_code}',
-                                                extra=self.LOGGER_EXTRA)
+                            self.LOGGER.warning(
+                                f'Login failed for naif, captcha : {captcha_code}',
+                                extra=self.LOGGER_EXTRA
+                            )
                             login_fail_flag = True
                             break
 
@@ -358,14 +381,19 @@ class Api(AbstractApi):
             if isinstance(obj, DailyTran):
                 try:
                     # update if exists
-                    daily_tran_qs = DailyTran.objects.filter(Q(date__exact=obj.date)
-                                                             & Q(product=obj.product))
+                    daily_tran_qs = DailyTran.objects.filter(
+                        Q(date__exact=obj.date)
+                        & Q(product=obj.product)
+                    )
 
                     if daily_tran_qs.count() > 1:
                         # log as duplicate
                         items = str(daily_tran_qs.values_list('id', flat=True))
 
-                        self.LOGGER.warning('Find duplicate DailyTran item: %s' % items, extra=self.LOGGER_EXTRA)
+                        self.LOGGER.warning(
+                            'Find duplicate DailyTran item: %s' % items,
+                            extra=self.LOGGER_EXTRA
+                        )
 
                     elif daily_tran_qs.count() == 1:
                         daily_tran_qs.update(avg_price=obj.avg_price)

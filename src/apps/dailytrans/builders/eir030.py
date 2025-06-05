@@ -8,6 +8,7 @@ from .abstract import AbstractApi
 from .utils import date_transfer
 
 
+""" 農產品-批發 """
 class Api(AbstractApi):
     # Settings
     API_NAME = 'eir030'
@@ -23,8 +24,13 @@ class Api(AbstractApi):
     Type_Filter = 'TcType=%s'
 
     def __init__(self, model, config_code, type_id, logger_type_code=None):
-        super(Api, self).__init__(model=model, config_code=config_code, type_id=type_id,
-                                  logger='aprp', logger_type_code=logger_type_code)
+        super(Api, self).__init__(
+            model=model,
+            config_code=config_code,
+            type_id=type_id,
+            logger='aprp',
+            logger_type_code=logger_type_code
+        )
 
     def hook(self, dic):
         for key, value in dic.items():
@@ -45,32 +51,39 @@ class Api(AbstractApi):
                     low_price=dic.get('low_price_x'),
                     avg_price=dic.get('avg_price_x'),
                     volume=dic.get('volume_x'),
-                    date=date_transfer(sep=self.SEP, string=dic.get('date'), roc_format=self.ROC_FORMAT)
+                    date=date_transfer(
+                        sep=self.SEP, string=dic.get('date'), roc_format=self.ROC_FORMAT)
                 ) for p in products
             ]
             return trans
         else:
             if not products:
-                self.LOGGER.warning('Cannot Match Product: "%s" In Dictionary %s'
-                                    % (product_code, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Product: "%s" In Dictionary %s' % (product_code, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             if not source:
-                self.LOGGER.warning('Cannot Match Source: "%s" In Dictionary %s'
-                                    % (source_name, dic), extra=self.LOGGER_EXTRA)
+                self.LOGGER.warning(
+                    'Cannot Match Source: "%s" In Dictionary %s' % (source_name, dic),
+                    extra=self.LOGGER_EXTRA
+                )
             return dic
 
     def request(self, start_date=None, end_date=None, source=None, code=None, tc_type=None):
         url = self.API_URL
         if tc_type:
-            url = "&".join((url, self.Type_Filter % tc_type))
+            url = '&'.join((url, self.Type_Filter % tc_type))
 
         if start_date:
             if not isinstance(start_date, datetime.date):
                 raise NotImplementedError
 
-            start_date_str = date_transfer(sep=self.SEP,
-                                           date=start_date,
-                                           roc_format=self.ROC_FORMAT,
-                                           zfill=self.ZFILL)
+            start_date_str = date_transfer(
+                sep=self.SEP,
+                date=start_date,
+                roc_format=self.ROC_FORMAT,
+                zfill=self.ZFILL
+            )
 
             url = '&'.join((url, self.START_DATE_FILTER % start_date_str))
 
@@ -78,10 +91,12 @@ class Api(AbstractApi):
             if not isinstance(end_date, datetime.date):
                 raise NotImplementedError
 
-            end_date_str = date_transfer(sep=self.SEP,
-                                         date=end_date,
-                                         roc_format=self.ROC_FORMAT,
-                                         zfill=self.ZFILL)
+            end_date_str = date_transfer(
+                sep=self.SEP,
+                date=end_date,
+                roc_format=self.ROC_FORMAT,
+                zfill=self.ZFILL
+            )
 
             url = '&'.join((url, self.END_DATE_FILTER % end_date_str))
 
@@ -102,10 +117,13 @@ class Api(AbstractApi):
             try:
                 data = json.loads(response.text)
             except Exception as e:
-                self.LOGGER.exception(f'exception: {e}, response: {response.text}', extra=self.LOGGER_EXTRA)
-        data = pd.DataFrame(data,
-                            columns=['上價', '中價', '下價', '平均價', '交易量', '交易日期', '作物代號', '市場名稱',
-                                     '種類代碼'])
+                self.LOGGER.exception(
+                    f'exception: {e}, response: {response.text}', extra=self.LOGGER_EXTRA)
+        data = pd.DataFrame(
+            data,columns=[
+                '上價', '中價', '下價', '平均價', '交易量', '交易日期', '作物代號', '市場名稱','種類代碼'
+            ]
+        )
         data = data[data['作物代號'].isin(self.target_items)]
 
         try:
@@ -118,9 +136,9 @@ class Api(AbstractApi):
         data_merge = self._compare_data_from_api_and_db(data)
         condition = ((data_merge['avg_price_x'] != data_merge['avg_price_y']) | (
                 data_merge['up_price_x'] != data_merge['up_price_y']) | (
-                             data_merge['low_price_x'] != data_merge['low_price_y']) | (
-                             data_merge['mid_price_x'] != data_merge['mid_price_y']) | (
-                             data_merge['volume_x'] != data_merge['volume_y']))
+                data_merge['low_price_x'] != data_merge['low_price_y']) | (
+                data_merge['mid_price_x'] != data_merge['mid_price_y']) | (
+                data_merge['volume_x'] != data_merge['volume_y']))
         if not data_merge[condition].empty:
             for _, value in data_merge[condition].fillna('').iterrows():
                 try:
@@ -129,14 +147,15 @@ class Api(AbstractApi):
                         self._update_data(value, existed_tran)
                     else:
                         existed_tran.delete()
-                        self.LOGGER.warning(msg=f"The DailyTran data of the product: {value['product__code']} "
-                                                f"on {value['date'].strftime('%Y-%m-%d')} "
-                                                f"from source: {value['source__name']} with\n"
-                                                f"up_price: {value['up_price_y']}\n"
-                                                f"mid_price: {value['mid_price_y']}\n"
-                                                f"low_price: {value['low_price_y']}\n"
-                                                f"avg_price: {value['avg_price_y']}\n"
-                                                f"volume: {value['volume_y']} has been deleted.")
+                        self.LOGGER.warning(
+                            msg=f'The DailyTran data of the product: {value["product__code"]} '
+                                f'on {value["date"].strftime("%Y-%m-%d")} '
+                                f'from source: {value["source__name"]} with\n'
+                                f'up_price: {value["up_price_y"]}\n'
+                                f'mid_price: {value["mid_price_y"]}\n'
+                                f'low_price: {value["low_price_y"]}\n'
+                                f'avg_price: {value["avg_price_y"]}\n'
+                                f'volume: {value["volume_y"]} has been deleted.')
                 except Exception as e:
                     self._save_new_data(value)
 
@@ -153,19 +172,25 @@ class Api(AbstractApi):
             '種類代碼': 'Tc_type'
         }
         data.rename(columns=columns, inplace=True)
-        data['date'] = data['date'].apply(lambda x: datetime.datetime.strptime((str(int(x.split('.')[0]) + 1911)
-                                                                                + x[len(str(x.split('.')[0])):])
-                                                                               .replace('.', '-'), '%Y-%m-%d').date())
+        data['date'] = data['date'].apply(lambda x: datetime.datetime.strptime(
+            (str(int(x.split('.')[0]) + 1911) + x[len(str(x.split('.')[0])):])
+            .replace('.', '-'), '%Y-%m-%d').date())
         data['source__name'] = data['source__name'].str.replace('台', '臺')
         data['product__code'] = data['product__code'].astype(str)
 
-        data_db = DailyTran.objects.filter(date=data['date'].iloc[0], product__type=1, product__config=self.CONFIG)
-        data_db = pd.DataFrame(list(data_db.values('id', 'product__id', 'product__code', 'up_price', 'mid_price',
-                                                   'low_price', 'avg_price', 'volume', 'date', 'source__name'))) \
-            if data_db else pd.DataFrame(columns=['id', 'product__id', 'product__code', 'up_price', 'mid_price',
-                                                  'low_price', 'avg_price', 'volume', 'date', 'source__name'])
+        data_db = DailyTran.objects.filter(
+            date=data['date'].iloc[0], product__type=1, product__config=self.CONFIG
+        )
+        data_db = pd.DataFrame(list(data_db.values(
+            'id', 'product__id', 'product__code', 'up_price', 'mid_price', 'low_price', 'avg_price', 'volume', 'date', 'source__name'
+        ))) \
+            if data_db else pd.DataFrame(
+            columns=['id', 'product__id', 'product__code', 'up_price', 'mid_price','low_price', 'avg_price', 'volume', 'date', 'source__name']
+        )
 
-        return data.merge(data_db, on=['date', 'product__code', 'source__name'], how='outer')
+        return data.merge(
+            data_db, on=['date', 'product__code', 'source__name'],
+            how='outer')
 
     def _update_data(self, value, existed_tran):
         existed_tran.up_price = value['up_price_x']
@@ -175,8 +200,8 @@ class Api(AbstractApi):
         existed_tran.volume = value['volume_x']
         existed_tran.save()
         self.LOGGER.info(
-            msg=f"The data of the product: {value['product__code']} on"
-                f" {value['date'].strftime('%Y-%m-%d')} has been updated.")
+            msg=f'The data of the product: {value["product__code"]} on'
+                f' {value["date"].strftime("%Y-%m-%d")} has been updated.')
 
     def _save_new_data(self, value):
         products = self.MODEL.objects.filter(code=value['product__code'])

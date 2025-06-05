@@ -1,10 +1,12 @@
 import datetime
 import logging
-import time
-from functools import wraps
+
 from collections import namedtuple
+from functools import wraps
+
 from django.utils import timezone
-from apps.dailytrans.models import DailyTran
+
+
 db_logger = logging.getLogger('aprp')
 
 

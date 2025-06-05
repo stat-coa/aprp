@@ -418,7 +418,7 @@ class DailyReportFactory(object):
                            self.specify_day)
 
         # 金鑽鳳梨(批發 台北一, 台北二)
-        self._extract_data(91, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
+        # self._extract_data(91, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
 
         # TODO: 新增 '寶島梨' 至 row 56
 

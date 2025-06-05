@@ -417,6 +417,8 @@ class DailyReportFactory(object):
         self._extract_data(107, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
                            self.specify_day)
 
+        self._extract_data(91, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
+
         # TODO: 新增 '寶島梨' 至 row 56
 
     def _extract_data(self, row, model, product_id, sources=None, date=None):

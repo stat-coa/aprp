@@ -3,13 +3,9 @@ import datetime
 from apps.dailytrans.builders.amis import Api as WholeSaleApi02
 from apps.dailytrans.builders.apis import Api as OriginApi
 from apps.dailytrans.builders.eir030 import Api as WholeSaleApi05
-from apps.dailytrans.builders.utils import (
-    product_generator,
-    director,
-    date_generator,
-    DirectData,
-)
+from apps.dailytrans.builders.utils import date_generator, director, DirectData
 from .models import Crop
+
 
 MODELS = [Crop]
 WHOLESALE_DELTA_DAYS = 30
@@ -73,7 +69,7 @@ def direct_origin(start_date, end_date, *args, **kwargs):
 
 @director
 def direct_wholesale_02(start_date, end_date, *args, **kwargs):
-    """ 此 API 由由農糧署廠商提供，主要用來抓取各批發市場當日總量與平均價格，相對於上面兩個 API，此 API 較不重要 """
+    """ 此 API 由農糧署廠商提供，主要用來抓取各批發市場當日總量與平均價格，相對於上面兩個 API，此 API 較不重要 """
 
     # config_type=COG02 -> 蔬菜-批發合計, type_id=1 -> 批發
     data = DirectData('COG02', 1, LOGGER_TYPE_CODE)
@@ -82,7 +78,9 @@ def direct_wholesale_02(start_date, end_date, *args, **kwargs):
         wholesale_api = WholeSaleApi02(model=model, market_type='V', **data._asdict())
 
         # This api only provide one day filter
-        for delta_start_date, delta_end_date in date_generator(start_date, end_date, 1):
+        for delta_start_date, delta_end_date in date_generator(
+                start_date, end_date, 1
+        ):
             response = wholesale_api.request(date=delta_start_date)
             wholesale_api.load(response)
 

@@ -358,9 +358,7 @@ class DailyReportFactory(object):
         monitor = MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False)
 
         for mp in monitor:
-            if 76 <= mp.row <= 98:
-                mp.row += 1
-            elif 99 <= mp.row <= 108:
+            if mp.row >= 76:
                 mp.row += 1
 
         for item in monitor:
@@ -867,15 +865,15 @@ class ExtraItem:
         },
         {
             'product_id': 30002,
-            'row': 99,
-        },
-        {
-            'product_id': 60051,
             'row': 100,
         },
         {
+            'product_id': 60051,
+            'row': 101,
+        },
+        {
             'product_id': 60066,
-            'row': 103,
+            'row': 104,
         },
         {
             'product_id': 50063,
@@ -889,7 +887,7 @@ class ExtraItem:
         },
         {
             'product_id': 60068,
-            'row': 107,
+            'row': 108,
             'sources_id': [30001, 30002, 30003, 30004, 30005]
         },
     ]

@@ -354,7 +354,12 @@ class DailyReportFactory(object):
             start_date__month__lte=self.specify_day.month,
             end_date__month__gte=self.specify_day.month
         ).first()
+
         monitor = MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False)
+
+        for mp in monitor:
+            if mp.row >= 76:
+                mp.row += 1
 
         for item in monitor:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
@@ -418,7 +423,7 @@ class DailyReportFactory(object):
                            self.specify_day)
 
         # 金鑽鳳梨(批發 台北一, 台北二)
-        self._extract_data(91, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
+        self._extract_data(76, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
 
         # TODO: 新增 '寶島梨' 至 row 56
 
@@ -503,7 +508,7 @@ class DailyReportFactory(object):
             # )
 
         # 第二階段隱藏品項欄位後日報下方說明欄,依品項顯示月份對應調整資料來源文字說明處理
-        for rows in sheet['A133:U149']:
+        for rows in sheet['A135:U151']:
             for cell in rows:
                 # 資料來源字型統一為標楷體
                 cell.font = Font(name='標楷體', size=13)
@@ -512,10 +517,10 @@ class DailyReportFactory(object):
                 if row_no > 135:
                     cell.value = None
 
-        sheet.cell(row=134, column=1).value = sheet.cell(row=134, column=1).value.replace('本會', '本部')
         sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
+        sheet.cell(row=136, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
 
-        now_row = 136
+        now_row = 137
 
         # 一般農產品的資料來源說明欄位處理
         for i in desc_1:
@@ -525,7 +530,7 @@ class DailyReportFactory(object):
             # append_desc
             if item_name in self.item_desc:
                 td = sheet.cell(row=now_row, column=1)
-                tmp = (now_row == 136 and '3.') or '   '
+                tmp = (now_row == 137 and '3.') or '   '
                 td.value = f"{tmp}{desc_1_text}；"
                 now_row += 1
 

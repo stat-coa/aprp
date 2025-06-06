@@ -508,7 +508,7 @@ class DailyReportFactory(object):
             # )
 
         # 第二階段隱藏品項欄位後日報下方說明欄,依品項顯示月份對應調整資料來源文字說明處理
-        for rows in sheet['A135:U151']:
+        for rows in sheet['A133:U150']:
             for cell in rows:
                 # 資料來源字型統一為標楷體
                 cell.font = Font(name='標楷體', size=13)

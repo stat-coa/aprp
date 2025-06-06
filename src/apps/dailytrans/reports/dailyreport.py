@@ -517,8 +517,8 @@ class DailyReportFactory(object):
                 if row_no > 136:
                     cell.value = None
 
-        sheet.cell(row=136, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
-        sheet.cell(row=137, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
+        # sheet.cell(row=136, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
+        # sheet.cell(row=137, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
 
         now_row = 137
 

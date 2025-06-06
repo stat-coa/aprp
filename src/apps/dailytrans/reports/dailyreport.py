@@ -517,10 +517,10 @@ class DailyReportFactory(object):
                 if row_no > 135:
                     cell.value = None
 
-        sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
-        sheet.cell(row=136, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
+        # sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
+        # sheet.cell(row=136, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
 
-        now_row = 136
+        now_row = 137
 
         # 一般農產品的資料來源說明欄位處理
         for i in desc_1:

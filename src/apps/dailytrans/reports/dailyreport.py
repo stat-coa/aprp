@@ -360,6 +360,8 @@ class DailyReportFactory(object):
         for mp in monitor:
             if mp.row >= 76:
                 mp.row += 1
+            elif 99 <= mp.row <= 108:
+                mp.row += 1
 
         for item in monitor:
             query_set = DailyTran.objects.filter(product__in=item.product_list())

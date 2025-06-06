@@ -360,8 +360,7 @@ class DailyReportFactory(object):
         for mp in monitor:
             if mp.row >= 76:
                 mp.row += 1
-            elif 99 <= mp.row <= 108:
-                mp.row += 1
+
 
         for item in monitor:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
@@ -409,7 +408,7 @@ class DailyReportFactory(object):
 
         # 長糯, 稻穀, 全部花卉 L, 火鶴花 FB, 文心蘭 FO3
         # AbstractProduct id: 3001 -> 15, 3002 -> 19, 3508 -> 30002, 3509 -> 60051, 3510 -> 60066
-        extra_product = [(3001, 10), (3002, 9), (3508, 99), (3509, 100), (3510, 103)]
+        extra_product = [(3001, 10), (3002, 9), (3508, 100), (3509, 101), (3510, 104)]
 
         for item in extra_product:
             self._extract_data(item[1], WatchlistItem, item[0], None, self.specify_day)

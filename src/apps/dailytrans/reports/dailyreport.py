@@ -494,7 +494,7 @@ class DailyReportFactory(object):
                 except Exception:
                     pass
 
-        for i in range(9, 132):
+        for i in range(9, 133):
             if i not in self.row_visible:
                 sheet.row_dimensions[i].hidden = True
             # 依袁麗惠要求,日報取消品項底色識別
@@ -514,11 +514,11 @@ class DailyReportFactory(object):
                 cell.font = Font(name='標楷體', size=13)
                 row_no = cell.row
 
-                if row_no > 135:
+                if row_no > 136:
                     cell.value = None
 
-        sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
-        sheet.cell(row=136, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
+        sheet.cell(row=136, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
+        sheet.cell(row=137, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
 
         now_row = 137
 
@@ -984,7 +984,7 @@ class ExcelHandler:
     SPECIFIED_CROP_DESC = '交易量價(東勢果菜市場價格)－農產品行情報導，本部農糧署。'
 
     ROW_NUM_START = 9
-    ROW_NUM_END = 132
+    ROW_NUM_END = 133
 
     def __init__(self, factory: 'SimplifyDailyReportFactory', output_dir=settings.BASE_DIR('apps/dailytrans/reports')):
         self.factory = factory

@@ -507,8 +507,6 @@ class DailyReportFactory(object):
             #     end_color='FFFFFF'
             # )
 
-        sheet.row_dimensions[78].hidden = True
-
         # 第二階段隱藏品項欄位後日報下方說明欄,依品項顯示月份對應調整資料來源文字說明處理
         for rows in sheet['A133:U150']:
             for cell in rows:
@@ -516,11 +514,11 @@ class DailyReportFactory(object):
                 cell.font = Font(name='標楷體', size=13)
                 row_no = cell.row
 
-                if row_no > 136:
+                if row_no > 135:
                     cell.value = None
 
-        sheet.cell(row=136, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
-        sheet.cell(row=137, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
+        sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
+        sheet.cell(row=136, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
 
         now_row = 137
 

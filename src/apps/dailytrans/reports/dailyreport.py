@@ -1548,6 +1548,11 @@ class SimplifyDailyReportFactory:
             self.excel_handler.remove_crop_desc(self.monitor.product.name)
 
     def report(self):
+
+        for mp in self.monitor_profile_qs:
+            if mp.row >= 76:
+                mp.row += 1
+
         for monitor in list(self.monitor_profile_qs) + ExtraItem.get_extra_monitors():
             self.monitor = monitor
             self.extend_query_str()

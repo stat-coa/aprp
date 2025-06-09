@@ -24,6 +24,9 @@ COPY src/requirements/base.txt \
     src/requirements/prod.txt \
     /app/requirements/
 
+COPY apps/dailytrans/reports/template.xlsx \
+    /app/apps/dailytrans/reports/template.xlsx
+
 RUN pip install -r requirements/base.txt
 
 ADD src .

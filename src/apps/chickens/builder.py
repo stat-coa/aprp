@@ -28,8 +28,13 @@ def direct(start_date=None, end_date=None, *args, **kwargs):
     for model in MODELS:
         for Api in APIS:
             api = Api(model=model, **data._asdict())
-            for delta_start_date, delta_end_date in date_generator(start_date, end_date, DELTA_DAYS):
-                response = api.request(start_date=delta_start_date, end_date=delta_end_date)
+            for delta_start_date, delta_end_date in date_generator(
+                start_date, end_date, DELTA_DAYS
+                ):
+                response = api.request(
+                    start_date=delta_start_date,
+                    end_date=delta_end_date
+                    )
                 api.load(response)
 
     return data

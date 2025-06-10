@@ -1,7 +1,7 @@
 from apps.dailytrans.builders.cattle import Api
 from apps.dailytrans.builders.utils import (
-    director,
     date_generator,
+    director,
     DirectData,
 )
 from .models import Cattle
@@ -21,7 +21,9 @@ def direct(start_date=None, end_date=None, *args, **kwargs):
 
     for model in MODELS:
         api = Api(model=model, **data._asdict())
-        for delta_start_date, delta_end_date in date_generator(start_date, end_date, DELTA_DAYS):
+        for delta_start_date, delta_end_date in date_generator(
+                start_date, end_date, DELTA_DAYS
+        ):
             response = api.request(date=delta_start_date)
             api.load(response)
 

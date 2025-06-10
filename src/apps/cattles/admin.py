@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.forms import ModelForm
+
 from .models import Cattle
 
 
 class CattleModelForm(ModelForm):
+
     class Meta:
         model = Cattle
         exclude = ['update_time']
@@ -15,8 +17,20 @@ class CattleModelForm(ModelForm):
 
 class CattleAdmin(admin.ModelAdmin):
     form = CattleModelForm
-    list_display = ['id', 'name', 'code', 'type', 'parent', 'update_time']
-    list_editable = ['name', 'code', 'type', 'parent']
+    list_display = [
+        'id',
+        'name',
+        'code',
+        'type',
+        'parent',
+        'update_time'
+    ]
+    list_editable = [
+        'name',
+        'code',
+        'type',
+        'parent'
+    ]
 
 
 admin.site.register(Cattle, CattleAdmin)

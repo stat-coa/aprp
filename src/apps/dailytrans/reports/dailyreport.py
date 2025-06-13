@@ -363,6 +363,11 @@ class DailyReportFactory(object):
         ).first()
 
         monitor = MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False)
+        
+        monitor_list = list(self.monitor)
+        for mp in monitor_list:
+            if mp.row >= 76:
+                mp.row += 1
 
         for item in monitor:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
@@ -409,10 +414,6 @@ class DailyReportFactory(object):
             if '牛' in item.product.name:
                 self.update_cattles(item, item.row)
             self.check_months(item)
-
-        for mp in monitor:
-            if mp.row >= 76:
-                mp.row += 1
 
         # 長糯, 稻穀, 全部花卉 L, 火鶴花 FB, 文心蘭 FO3
         # AbstractProduct id: 3001 -> 15, 3002 -> 19, 3508 -> 30002, 3509 -> 60051, 3510 -> 60066

@@ -362,10 +362,9 @@ class DailyReportFactory(object):
             end_date__month__gte=self.specify_day.month
         ).first()
 
-        monitor = MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False)
+        monitor = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
         
-        monitor_list = list(self.monitor)
-        for mp in monitor_list:
+        for mp in monitor:
             if mp.row >= 76:
                 mp.row += 1
 

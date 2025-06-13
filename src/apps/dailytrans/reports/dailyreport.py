@@ -362,13 +362,13 @@ class DailyReportFactory(object):
             end_date__month__gte=self.specify_day.month
         ).first()
 
-        monitor = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
+        monitor_list = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
         
-        for mp in monitor:
+        for mp in monitor_list:
             if mp.row >= 76:
                 mp.row += 1
 
-        for item in monitor:
+        for item in monitor_list:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
 
             # 因應措施是梨

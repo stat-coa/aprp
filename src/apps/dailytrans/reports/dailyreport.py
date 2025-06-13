@@ -63,7 +63,8 @@ SHEET_FORMAT = {
     'AD': '_-* #,##0.0_-;\\-* #,##0.0_-;_-* "-"?_-;_-@_-',
 }
 
-# 日報下方資料來源對應品項及其來源說明;香蕉排在本項最後一列加上"一般農產品的資料來源說明",下載日報會出現欄位長度超過列印邊界,移到本項第一列以避免此問題
+# 日報下方資料來源對應品項及其來源說明
+# 香蕉排在本項最後一列加上"一般農產品的資料來源說明",下載日報會出現欄位長度超過列印邊界,移到本項第一列以避免此問題
 desc_1 = [
     ('香蕉',
      '香蕉產地價格(上品-中寮、中埔、旗山、美濃及高樹等農會查報上品價格之簡單平均)、(下品-中寮及中埔農會查報下品價格之簡單平均)'),
@@ -117,11 +118,13 @@ class DailyReportFactory(object):
         self.this_week_end = self.specify_day
         self.last_week_start = self.this_week_start - datetime.timedelta(7)
         self.last_week_end = self.this_week_start - datetime.timedelta(1)
-        self.last_year_month_start = datetime.datetime(self.specify_day.year - 1, self.specify_day.month, 1)
-        self.last_year_month_end = datetime.datetime(self.specify_day.year - 1,
-                                                     self.specify_day.month,
-                                                     calendar.monthrange(self.specify_day.year - 1,
-                                                                         self.specify_day.month)[1])
+        self.last_year_month_start = datetime.datetime(
+            self.specify_day.year - 1, self.specify_day.month, 1
+            )
+        self.last_year_month_end = datetime.datetime(
+            self.specify_day.year - 1,
+            self.specify_day.month,
+            calendar.monthrange(self.specify_day.year - 1,self.specify_day.month)[1])
 
         # 紀錄要顯示的 Excel row number，不在此列表內的 row number 會被隱藏
         self.row_visible: List[int] = []
@@ -203,7 +206,9 @@ class DailyReportFactory(object):
         :param row: int: Excel row number
         :param monitor_price: Optional[float]: 監控價格
         """
-        result_tuple = get_group_by_date_query_set(query_set, self.last_week_start, self.this_week_end)
+        result_tuple = get_group_by_date_query_set(
+            query_set, self.last_week_start, self.this_week_end
+            )
         df: pd.DataFrame = result_tuple[0]
         has_volume: bool = result_tuple[1]
         has_weight: bool = result_tuple[2]
@@ -292,7 +297,9 @@ class DailyReportFactory(object):
             self.result[product_name].update({f'G{row}': last_year_avg_price})
 
     def update_rams(self, item, row):
-        query_set = DailyTran.objects.filter(product__in=item.product_list(), source__in=item.sources())
+        query_set = DailyTran.objects.filter(
+            product__in=item.product_list(),source__in=item.sources()
+            )
         for i in range(7):
             week_day = self.this_week_start + datetime.timedelta(i)
             qs = query_set.filter(date__lte=week_day.date()).order_by('-date')
@@ -357,11 +364,6 @@ class DailyReportFactory(object):
 
         monitor = MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False)
 
-        for mp in monitor:
-            if mp.row >= 76:
-                mp.row += 1
-
-
         for item in monitor:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
 
@@ -381,9 +383,11 @@ class DailyReportFactory(object):
             self.get_data(query_set, item.product.name, item.row, item.price)
 
             # 得到前一年同月份資料
-            query_set = DailyTran.objects.filter(product__in=item.product_list(),
-                                                 date__year=self.specify_day.year - 1,
-                                                 date__month=self.specify_day.month)
+            query_set = DailyTran.objects.filter(
+                product__in=item.product_list(),
+                date__year=self.specify_day.year - 1,
+                date__month=self.specify_day.month
+                )
 
             # 因應措施是梨
             if self.specify_day.month in [5, 6]:
@@ -406,6 +410,10 @@ class DailyReportFactory(object):
                 self.update_cattles(item, item.row)
             self.check_months(item)
 
+        for mp in monitor:
+            if mp.row >= 76:
+                mp.row += 1
+
         # 長糯, 稻穀, 全部花卉 L, 火鶴花 FB, 文心蘭 FO3
         # AbstractProduct id: 3001 -> 15, 3002 -> 19, 3508 -> 30002, 3509 -> 60051, 3510 -> 60066
         extra_product = [(3001, 10), (3002, 9), (3508, 100), (3509, 101), (3510, 104)]
@@ -414,18 +422,26 @@ class DailyReportFactory(object):
             self._extract_data(item[1], WatchlistItem, item[0], None, self.specify_day)
 
         # 香蕉台北一二批發
-        self._extract_data(73, Fruit, 50063, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
+        self._extract_data(
+            73, Fruit, 50063, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
+            )
 
         # 青香蕉下品()內銷)
-        self._extract_data(72, Fruit, 59019, Source.objects.filter(id__in=range(10030, 20001)), self.specify_day)
+        self._extract_data(
+            72, Fruit, 59019, Source.objects.filter(id__in=range(10030, 20001)), self.specify_day
+            )
 
         # 2020/4/16 主管會報陳副主委要求花卉品項,農糧署建議新增香水百合 FS
-        self._extract_data(108, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
-                           self.specify_day)
+        self._extract_data(
+            108, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
+            self.specify_day
+            )
 
         # 金鑽鳳梨(批發 台北一, 台北二)
-        self._extract_data(76, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day)
-
+        self._extract_data(
+            76, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
+            )
+        
         # TODO: 新增 '寶島梨' 至 row 56
 
     def _extract_data(self, row, model, product_id, sources=None, date=None):
@@ -448,7 +464,11 @@ class DailyReportFactory(object):
         self.get_data(query_set, f'{product.name}{product.type}', row, None)
 
         if date:
-            query_set = DailyTran.objects.filter(product=product, date__year=date.year - 1, date__month=date.month)
+            query_set = DailyTran.objects.filter(
+                product=product,
+                date__year=date.year - 1,
+                date__month=date.month
+                )
 
             if sources:
                 query_set = query_set.filter(source__in=sources)
@@ -663,7 +683,9 @@ class QueryString:
 
         return self
 
-    def add_where_by_date_between(self, start_date: datetime.date, end_date: datetime.date, has_and=True):
+    def add_where_by_date_between(
+        self, start_date: datetime.date, end_date: datetime.date, has_and=True
+        ):
         key_start_dt = 'start_date'
         key_end_dt = 'end_date'
         q = self.add_and_keyword(
@@ -716,8 +738,8 @@ class QueryString:
 
 class DailyTranHandler:
     """
-    此類別用於對日交易(DailyTran)資料做相關處理，為提升效能，全程使用 pandas 套件處理資料，並且
-    採用直連資料庫的方式，而非透過 Django ORM(經過測試，效能上有明顯差異)。
+    此類別用於對日交易(DailyTran)資料做相關處理，為提升效能，全程使用 pandas 套件處理資料，
+    並且採用直連資料庫的方式，而非透過 Django ORM(經過測試，效能上有明顯差異)
     """
 
     __conn: Optional[Engine] = None
@@ -734,25 +756,19 @@ class DailyTranHandler:
 
     @property
     def has_volume(self) -> bool:
-        """
-        確認資料是否有交易量(volume)
-        """
+        """ 確認資料是否有交易量(volume) """
 
         return (not self.df.empty) and (self.df['volume'].notna().sum() / self.df['avg_price'].count() > 0.8)
 
     @property
     def has_weight(self) -> bool:
-        """
-        確認資料是否有平均重量(avg_weight)
-        """
+        """ 確認資料是否有平均重量(avg_weight) """
 
         return (not self.df.empty) and (self.df['avg_weight'].notna().sum() / self.df['avg_price'].count() > 0.8)
 
     @property
     def fulfilled_df(self) -> pd.DataFrame:
-        """
-        針對日交易原始資料進行一些填充和計算，以便後續的資料處理
-        """
+        """ 針對日交易原始資料進行一些填充和計算，以便後續的資料處理 """
 
         df = self.df.query('volume > 0 and avg_weight > 0') if self.has_volume and self.has_weight else self.df
 
@@ -772,10 +788,8 @@ class DailyTranHandler:
 
     @property
     def df_with_group_by_date(self) -> pd.DataFrame:
-        """
-        針對日交易進行日期分組，並計算平均價格和平均重量
-        """
-
+        """ 針對日交易進行日期分組，並計算平均價格和平均重量 """
+        
         if self.df.empty:
             return pd.DataFrame(columns=self.group_by_columns)
 
@@ -806,9 +820,7 @@ class DailyTranHandler:
     def _get_df_query_by_date(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> pd.DataFrame:
-        """
-        根據日期區間篩選日交易資料
-        """
+        """ 根據日期區間篩選日交易資料 """
 
         return (
             self.df_with_group_by_date.query(
@@ -822,9 +834,7 @@ class DailyTranHandler:
     def get_avg_price(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> Union[int, float]:
-        """
-        計算指定日期區間的平均價格
-        """
+        """ 計算指定日期區間的平均價格 """
 
         df = self._get_df_query_by_date(start_date, end_date)
 
@@ -845,9 +855,7 @@ class DailyTranHandler:
     def get_avg_volume(
             self, start_date: Optional[datetime.date] = None, end_date: Optional[datetime.date] = None
     ) -> Union[int, float]:
-        """
-        計算指定日期區間的平均交易量
-        """
+        """ 計算指定日期區間的平均交易量 """
 
         df = self._get_df_query_by_date(start_date, end_date)
 
@@ -1155,9 +1163,7 @@ class ExcelHandler:
 
 
 class SimplifyDailyReportFactory:
-    """
-    為了較好的可讀性與執行效能，將原先的日報表類別(DailyReportFactory)重構。
-    """
+    """ 為了較好的可讀性與執行效能，將原先的日報表類別(DailyReportFactory)重構 """
 
     def __init__(self, specify_day: datetime.datetime):
         self.specify_day = specify_day
@@ -1233,9 +1239,7 @@ class SimplifyDailyReportFactory:
 
     @property
     def this_week_start(self) -> datetime:
-        """
-        計算最近一週的起始日期
-        """
+        """ 計算最近一週的起始日期 """
 
         return self.specify_day - datetime.timedelta(6)
 
@@ -1245,33 +1249,25 @@ class SimplifyDailyReportFactory:
 
     @property
     def last_week_start(self):
-        """
-        計算上週的起始日期
-        """
+        """ 計算上週的起始日期 """
 
         return self.this_week_start - datetime.timedelta(7)
 
     @property
     def last_week_end(self):
-        """
-        計算上週的結束日期
-        """
+        """ 計算上週的結束日期 """
 
         return self.this_week_end - datetime.timedelta(7)
 
     @property
     def this_week_date(self) -> List[datetime.timedelta]:
-        """
-        生成最近一週的日期區間
-        """
+        """ 生成最近一週的日期區間 """
 
         return [self.this_week_start + datetime.timedelta(i) for i in range(7)]
 
     @property
     def last_week_date(self) -> List[datetime.timedelta]:
-        """
-        生成上週的日期區間
-        """
+        """ 生成上週的日期區間 """
 
         return [self.this_week_start - datetime.timedelta(i) for i in range(8)]
 
@@ -1287,17 +1283,13 @@ class SimplifyDailyReportFactory:
 
     @property
     def monitor_has_desc(self) -> bool:
-        """
-        用於判斷監控品項是否有資料來源說明
-        """
+        """ 用於判斷監控品項是否有資料來源說明 """
 
         return self.monitor.product.name in self.excel_handler.dict_crop_desc
 
     @property
     def watchlist(self) -> Watchlist:
-        """
-        根據指定生成的報表日期，來獲取對應的監控清單
-        """
+        """ 根據指定生成的報表日期，來獲取對應的監控清單 """
 
         if self.__watchlist is None:
             self.__watchlist = Watchlist.objects.filter(
@@ -1311,7 +1303,9 @@ class SimplifyDailyReportFactory:
     @property
     def monitor_profile_qs(self):
         if self.__monitor_profile_qs is None:
-            self.__monitor_profile_qs = MonitorProfile.objects.filter(watchlist=self.watchlist, row__isnull=False)
+            self.__monitor_profile_qs = MonitorProfile.objects.filter(
+                watchlist=self.watchlist, row__isnull=False
+                )
 
         return self.__monitor_profile_qs
 
@@ -1341,9 +1335,7 @@ class SimplifyDailyReportFactory:
 
     @staticmethod
     def get_simple_avg_price(daily_trans: List[DailyTran]) -> float:
-        """
-        計算指定日期區間的簡單平均價格
-        """
+        """ 計算指定日期區間的簡單平均價格 """
 
         return (
             sum(d.avg_price for d in daily_trans) / len(daily_trans)
@@ -1376,9 +1368,7 @@ class SimplifyDailyReportFactory:
         self.query.save()
 
     def set_this_week_data(self):
-        """
-        設定最近一週的平均價格和交易量資料
-        """
+        """ 設定最近一週的平均價格和交易量資料 """
 
         self.result[self.monitor.product.name] = {}
         query = self.query.add_where_by_date_between(self.last_week_start, self.this_week_end).build()
@@ -1399,9 +1389,7 @@ class SimplifyDailyReportFactory:
                 )
 
     def set_avg_price_values(self):
-        """
-        設定前一週、最近一週的平均價格和與前一週比較的百分比
-        """
+        """ 設定前一週、最近一週的平均價格和與前一週比較的百分比 """
 
         last_week_avg_price = self.two_weeks_handler.get_avg_price(
             self.last_week_start.date(), self.last_week_end.date()
@@ -1422,9 +1410,7 @@ class SimplifyDailyReportFactory:
         )
 
     def set_volume_values(self):
-        """
-        設定前一週、最近一週的平均交易量和與前一週比較的百分比
-        """
+        """ 設定前一週、最近一週的平均交易量和與前一週比較的百分比 """
 
         if self.two_weeks_handler.has_volume:
             last_week_avg_volume = self.two_weeks_handler.get_avg_volume(
@@ -1447,18 +1433,14 @@ class SimplifyDailyReportFactory:
                 )
 
     def set_monitor_price(self):
-        """
-        設定監控價格欄位
-        """
+        """ 設定監控價格欄位 """
 
         # 若有監控價格，則設定監控價格欄位(F)
         if self.monitor.price:
             self.result[self.monitor.product.name].update({f'F{self.monitor.row}': self.monitor.price})
 
     def set_same_month_of_last_year_value(self):
-        """
-        設定與去年同月份的平均價格
-        """
+        """ 設定與去年同月份的平均價格 """
 
         query = self.query.load().add_where_by_last_year_and_month(self.specify_day).build()
         handler = DailyTranHandler(query, self.query.dict_query)
@@ -1532,26 +1514,18 @@ class SimplifyDailyReportFactory:
             )
 
     def set_visible_rows(self):
-        """
-        設定該監控品項是否顯示在報表上，其中 row 代表 Excel 的 row index
-        """
+        """ 設定該監控品項是否顯示在報表上，其中 row 代表 Excel 的 row index """
 
         if self.monitor.id is None or self.show_monitor:
             self.excel_handler.visible_rows = self.monitor.row
             
     def set_product_desc(self):
-        """
-        設定該監控品項的資料來源說明，若該品項有來源說明並且不顯示在報表上，則移除該品項的資料來源說明。
-        """
+        """ 設定該監控品項的資料來源說明，若該品項有來源說明並且不顯示在報表上，則移除該品項的資料來源說明 """
 
         if self.monitor.id and self.monitor_has_desc and not self.show_monitor:
             self.excel_handler.remove_crop_desc(self.monitor.product.name)
 
     def report(self):
-
-        for mp in self.monitor_profile_qs:
-            if mp.row >= 76:
-                mp.row += 1
 
         for monitor in list(self.monitor_profile_qs) + ExtraItem.get_extra_monitors():
             self.monitor = monitor

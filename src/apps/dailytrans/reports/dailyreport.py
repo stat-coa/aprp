@@ -365,7 +365,7 @@ class DailyReportFactory(object):
         monitor_list = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
         
         for mp in monitor_list:
-            if mp.row > 76:
+            if mp.row >= 76:
                 mp.row += 1
             # if mp.row > 81:
             #     mp.row += 3

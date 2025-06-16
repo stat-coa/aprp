@@ -449,9 +449,9 @@ class DailyReportFactory(object):
             )
         
         # 寶島甘露梨(批發, 東勢鎮)
-        self._extract_data(
-            56, AbstractProduct, 50299, Source.objects.filter(id=10008), self.specify_day
-        )
+        # self._extract_data(
+        #     56, AbstractProduct, 50299, Source.objects.filter(id=10008), self.specify_day
+        # )
         
         # 愛文芒果(產地)
         self._extract_data(

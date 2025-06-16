@@ -365,12 +365,14 @@ class DailyReportFactory(object):
         monitor_list = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
         
         for mp in monitor_list:
-            if mp.row > 70:
+            if mp.row >= 70:
                 mp.row += 1
             elif mp.row > 76:
                 mp.row += 2
             elif mp.row > 81:
                 mp.row += 3
+            elif mp.row >= 116:
+                mp.row += 2
                 
         for item in monitor_list:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
@@ -448,7 +450,7 @@ class DailyReportFactory(object):
         
         # 寶島甘露梨(批發, 東勢鎮)
         self._extract_data(
-            56, Fruit, 50299, Source.objects.filter(id=10008), self.specify_day
+            56, Fruit, 50299, Source.objects.filter(id__in=[10008]), self.specify_day
         )
         
         # 愛文芒果(產地)

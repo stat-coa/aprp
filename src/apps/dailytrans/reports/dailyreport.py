@@ -580,7 +580,7 @@ class DailyReportFactory(object):
 
         td = sheet.cell(row=now_row, column=1)
         desc_join = '、'.join(desc_2)
-        desc_2_text = f'4.、{desc_join}交易量價(東勢果菜市場價格)－農產品行情報導，本部農糧署。'
+        desc_2_text = f'4.{desc_join}交易量價(東勢果菜市場價格)－農產品行情報導，本部農糧署。'
         td.value = desc_2_text
         now_row += 1
         pn += 1

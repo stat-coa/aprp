@@ -81,7 +81,7 @@ desc_1 = [
     ('鳳梨釋迦', '鳳梨釋迦產地價格(台東地區農會查報價格)')
 ]
 
-desc_2 = ['新興梨', '豐水梨', '柿子']
+desc_2 = ['豐水梨', '新興梨', '寶島甘露梨']
 
 desc_3 = [
     '花卉交易(全部花卉市場) 交易量：火鶴花以單枝，文心蘭10枝，香水百合5枝─農產品行情報導，本部農糧署。',
@@ -365,8 +365,8 @@ class DailyReportFactory(object):
         monitor_list = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
         
         for mp in monitor_list:
-            if mp.row >= 76:
-                mp.row += 1
+            if mp.row >= 70:
+                mp.row += 3
 
         for item in monitor_list:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
@@ -416,33 +416,46 @@ class DailyReportFactory(object):
 
         # 長糯, 稻穀, 全部花卉 L, 火鶴花 FB, 文心蘭 FO3
         # AbstractProduct id: 3001 -> 15, 3002 -> 19, 3508 -> 30002, 3509 -> 60051, 3510 -> 60066
-        extra_product = [(3001, 10), (3002, 9), (3508, 100), (3509, 101), (3510, 104)]
+        extra_product = [(3001, 10), (3002, 9), (3508, 102), (3509, 103), (3510, 106)]
 
         for item in extra_product:
             self._extract_data(item[1], WatchlistItem, item[0], None, self.specify_day)
 
         # 香蕉台北一二批發
         self._extract_data(
-            73, Fruit, 50063, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
+            74, Fruit, 50063, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
             )
 
         # 青香蕉下品()內銷)
         self._extract_data(
-            72, Fruit, 59019, Source.objects.filter(id__in=range(10030, 20001)), self.specify_day
+            73, Fruit, 59019, Source.objects.filter(id__in=range(10030, 20001)), self.specify_day
             )
 
         # 2020/4/16 主管會報陳副主委要求花卉品項,農糧署建議新增香水百合 FS
         self._extract_data(
-            108, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
+            110, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
             self.specify_day
             )
 
-        # 金鑽鳳梨(批發 台北一, 台北二)
+        # 金鑽鳳梨(批發, 台北一&台北二)
         self._extract_data(
-            76, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
+            77, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
             )
         
-        # TODO: 新增 '寶島梨' 至 row 56
+        # 寶島甘露梨(批發, 東勢鎮)
+        self._extract_data(
+            56, Fruit, 50299, Source.objects.filter(id__in=10008), self.specify_day
+        )
+        
+        # 愛文芒果(產地)
+        self._extract_data(
+            70, Fruit, 59013, Source.objects.filter(type_id=2), self.specify_day
+        )
+        
+        # 珍珠芭(產地)
+        self._extract_data(
+            82, Fruit, 59014, Source.objects.filter(type_id=2), self.specify_day
+        )
 
     def _extract_data(self, row, model, product_id, sources=None, date=None):
         self.row_visible.append(row)
@@ -515,7 +528,7 @@ class DailyReportFactory(object):
                 except Exception:
                     pass
 
-        for i in range(9, 133):
+        for i in range(9, 135):
             if i not in self.row_visible:
                 sheet.row_dimensions[i].hidden = True
             # 依袁麗惠要求,日報取消品項底色識別
@@ -529,19 +542,19 @@ class DailyReportFactory(object):
             # )
 
         # 第二階段隱藏品項欄位後日報下方說明欄,依品項顯示月份對應調整資料來源文字說明處理
-        for rows in sheet['A133:U150']:
+        for rows in sheet['A135:U152']:
             for cell in rows:
                 # 資料來源字型統一為標楷體
                 cell.font = Font(name='標楷體', size=13)
                 row_no = cell.row
 
-                if row_no > 136:
+                if row_no > 138:
                     cell.value = None
 
-        sheet.cell(row=135, column=1).value = sheet.cell(row=135, column=1).value.replace('本會', '本部')
-        sheet.cell(row=136, column=1).value = sheet.cell(row=136, column=1).value.replace('本會', '本部')
+        sheet.cell(row=137, column=1).value = sheet.cell(row=137, column=1).value.replace('本會', '本部')
+        sheet.cell(row=138, column=1).value = sheet.cell(row=138, column=1).value.replace('本會', '本部')
 
-        now_row = 137
+        now_row = 139
 
         # 一般農產品的資料來源說明欄位處理
         for i in desc_1:
@@ -551,29 +564,20 @@ class DailyReportFactory(object):
             # append_desc
             if item_name in self.item_desc:
                 td = sheet.cell(row=now_row, column=1)
-                tmp = (now_row == 137 and '3.') or '   '
+                tmp = (now_row == 139 and '3.') or '   '
                 td.value = f"{tmp}{desc_1_text}；"
                 now_row += 1
 
         td = sheet.cell(row=now_row - 1, column=1)
         td.value = td.value.replace('；', '—農產品價格查報，本部農糧署。')
-        desc_2_tmp = []
         pn = 4
 
-        for item_name in desc_2:
-            if item_name in self.item_desc:
-                if item_name == '柿子':
-                    desc_2_tmp.append('甜柿')
-                else:
-                    desc_2_tmp.append(item_name)
-
-        if desc_2_tmp:
-            td = sheet.cell(row=now_row, column=1)
-            desc_2_text = '4.' + '、'.join(desc_2_tmp) + \
-                          '交易量價(東勢果菜市場價格)－農產品行情報導，本部農糧署。'
-            td.value = desc_2_text
-            now_row += 1
-            pn += 1
+        td = sheet.cell(row=now_row, column=1)
+        desc_join = '、'.join(desc_2)
+        desc_2_text = f'4.、{desc_join}交易量價(東勢果菜市場價格)－農產品行情報導，本部農糧署。'
+        td.value = desc_2_text
+        now_row += 1
+        pn += 1
 
         # 其餘花卉,畜禽,水產類的資料來源說明欄位處理
         for p in desc_3:
@@ -874,29 +878,29 @@ class ExtraItem:
         },
         {
             'product_id': 30002,
-            'row': 100,
+            'row': 102,
         },
         {
             'product_id': 60051,
-            'row': 101,
+            'row': 103,
         },
         {
             'product_id': 60066,
-            'row': 104,
+            'row': 106,
         },
         {
             'product_id': 50063,
-            'row': 73,
+            'row': 74,
             'sources_id': [20001, 20002]
         },
         {
             'product_id': 59019,
-            'row': 72,
+            'row': 73,
             'sources_id': [i for i in range(10030, 10135)]
         },
         {
             'product_id': 60068,
-            'row': 108,
+            'row': 110,
             'sources_id': [30001, 30002, 30003, 30004, 30005]
         },
     ]
@@ -988,12 +992,12 @@ class ExcelHandler:
     TEMPLATE_PATH = str(settings.BASE_DIR('apps/dailytrans/reports/template.xlsx'))
 
     DESC_LIST_NUM = 4
-    DESC_ROW_START = 137
+    DESC_ROW_START = 139
     END_OF_CROP_DESC = '—農產品價格查報，本部農糧署。'
     SPECIFIED_CROP_DESC = '交易量價(東勢果菜市場價格)－農產品行情報導，本部農糧署。'
 
     ROW_NUM_START = 9
-    ROW_NUM_END = 133
+    ROW_NUM_END = 135
 
     def __init__(self, factory: 'SimplifyDailyReportFactory', output_dir=settings.BASE_DIR('apps/dailytrans/reports')):
         self.factory = factory
@@ -1125,12 +1129,14 @@ class ExcelHandler:
         product_names = []
 
         for i in self.visible_rows:
-            if i == 57:
-                product_names.append('新興梨')
-            elif i == 58:
+            if i == 56:
+                product_names.append('寶島甘露梨')
+            elif i == 57:
                 product_names.append('豐水梨')
-            elif i == 67:
-                product_names.append('甜柿')
+            elif i == 58:
+                product_names.append('新興梨')
+
+ 
 
         if product_names:
             text = f'{self.desc_list_num}.{"、".join(product_names)}{self.SPECIFIED_CROP_DESC}'

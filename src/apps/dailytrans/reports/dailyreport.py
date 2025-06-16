@@ -439,7 +439,7 @@ class DailyReportFactory(object):
 
         # 2020/4/16 主管會報陳副主委要求花卉品項,農糧署建議新增香水百合 FS
         self._extract_data(
-            109, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
+            110, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
             self.specify_day
             )
 

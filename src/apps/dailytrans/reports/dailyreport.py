@@ -364,6 +364,14 @@ class DailyReportFactory(object):
 
         monitor_list = list(MonitorProfile.objects.filter(watchlist=watchlist, row__isnull=False))
         
+        for mp in monitor_list:
+            if mp.row > 70:
+                mp.row += 1
+            elif mp.row > 76:
+                mp.row += 2
+            elif mp.row > 81:
+                mp.row += 3
+                
         for item in monitor_list:
             query_set = DailyTran.objects.filter(product__in=item.product_list())
 

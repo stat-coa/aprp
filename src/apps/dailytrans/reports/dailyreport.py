@@ -443,6 +443,11 @@ class DailyReportFactory(object):
             self.specify_day
             )
 
+        # 金鑽鳳梨(產地)
+        self._extract_data(
+            76, Fruit, 59008, Source.objects.filter(type_id=2), self.specify_day
+        )
+        
         # 金鑽鳳梨(批發, 台北一&台北二)
         self._extract_data(
             77, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day

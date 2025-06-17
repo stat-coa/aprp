@@ -368,7 +368,7 @@ class DailyReportFactory(object):
             if mp.row >= 70:
                 mp.row += 1
             
-            if mp.row >= 76:
+            if mp.row >= 77:
                 mp.row += 1
                   
             if mp.row >= 82:
@@ -442,11 +442,6 @@ class DailyReportFactory(object):
             110, Flower, 60068, Source.objects.filter(id__in=[30001, 30002, 30003, 30004, 30005]),
             self.specify_day
             )
-
-        # 金鑽鳳梨(產地)
-        # self._extract_data(
-        #     76, Fruit, 59008, Source.objects.filter(type_id=2), self.specify_day
-        # )
         
         # 金鑽鳳梨(批發, 台北一&台北二)
         self._extract_data(
@@ -454,9 +449,9 @@ class DailyReportFactory(object):
             )
         
         # 寶島甘露梨(批發, 東勢鎮)
-        # self._extract_data(
-        #     56, Fruit, 50299, Source.objects.filter(id=20008), self.specify_day
-        # )
+        self._extract_data(
+            56, Fruit, 50299, Source.objects.filter(id=20008), self.specify_day
+        )
         
         # 愛文芒果(產地)
         self._extract_data(

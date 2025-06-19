@@ -179,8 +179,6 @@ class DailyReportFactory(object):
                     self.item_desc.append('豐水梨')
                 elif self.specify_day.month in [7, 8]:
                     self.item_desc.append('新興梨')
-                elif self.specify_day.month in [8, 9]:
-                    self.item_desc.append('寶島甘露梨')
             else:
                 self.item_desc.append(profile.product.name)
 
@@ -450,8 +448,9 @@ class DailyReportFactory(object):
             77, Fruit, 50068, Source.objects.filter(id__in=[20001, 20002]), self.specify_day
             )
         
-        # 寶島甘露梨(批發, 東勢鎮)
-        self._extract_data(
+        # 寶島甘露梨(批發, 東勢鎮) - 僅限 8、9 月顯示 
+        if self.specify_day.month in [8, 9]:        
+          self._extract_data(
             56, Fruit, 50299, Source.objects.filter(id=20008), self.specify_day
         )
         

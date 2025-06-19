@@ -179,6 +179,8 @@ class DailyReportFactory(object):
                     self.item_desc.append('豐水梨')
                 elif self.specify_day.month in [7, 8]:
                     self.item_desc.append('新興梨')
+                elif self.specify_day.month in [8, 9]:
+                    self.item_desc.append('寶島甘露梨')
             else:
                 self.item_desc.append(profile.product.name)
 
@@ -486,7 +488,7 @@ class DailyReportFactory(object):
             query_set = DailyTran.objects.filter(
                 product=product,
                 date__year=date.year - 1,
-                date__month=date.month
+                date__month=date.month  
                 )
 
             if sources:

@@ -21,7 +21,7 @@
             輔導購貯及促銷等措施
 
 - model: watchlists.MonitorProfile
-  pk: 1402
+  pk: 1502
   fields:
     product: 49002 # 紅豆
     watchlist: 17
@@ -40,7 +40,7 @@
             輔導購貯及促銷等措施
 
 - model: watchlists.MonitorProfile
-  pk: 1403
+  pk: 1503
   fields:
     product: 40477 # 甘藷
     watchlist: 17
@@ -61,7 +61,7 @@
             2.輔導加工
 
 - model: watchlists.MonitorProfile
-  pk: 1404
+  pk: 1504
   fields:
     product: 40438 # 大蒜
     watchlist: 17
@@ -81,7 +81,7 @@
 
 # 2021/9/6 農糧署來函新增監控大蒜高價
 - model: watchlists.MonitorProfile
-  pk: 1458
+  pk: 1558
   fields:
     product: 40438 # 大蒜
     watchlist: 17
@@ -103,7 +103,7 @@
             5.請產業團體發布訊息秩序釋出大蒜
 
 - model: watchlists.MonitorProfile
-  pk: 1405
+  pk: 1505
   fields:
     product: 40422 # 洋蔥
     watchlist: 17
@@ -122,7 +122,7 @@
             外銷購貯冷藏調節產期及輔導促銷等措施
 
 - model: watchlists.MonitorProfile
-  pk: 1406
+  pk: 1506
   fields:
     product: 40163 # 甘藍
     watchlist: 17
@@ -142,7 +142,7 @@
             啟動產銷三箭措施：拓展外銷、擴大行銷及輔導加工，另請校園團膳及國軍副食加強採購，並搭配產地分級分流措施，穩定市場品質與價格
 
 - model: watchlists.MonitorProfile
-  pk: 1407
+  pk: 1507
   fields:
     product: 40539 # 青蔥日蔥
     watchlist: 17
@@ -162,7 +162,7 @@
             採行促銷及加工措施
 
 - model: watchlists.MonitorProfile
-  pk: 1408
+  pk: 1508
   fields:
     product: 40541 # 青蔥-粉蔥(含北蔥)
     watchlist: 17
@@ -182,7 +182,7 @@
             採行促銷及加工措施
 
 - model: watchlists.MonitorProfile
-  pk: 1409
+  pk: 1509
   fields:
     product: 40185 # 結球白菜
     watchlist: 17
@@ -202,7 +202,7 @@
             啟動產銷三箭措施：拓展外銷、擴大行銷及輔導加工，另請校園團膳及國軍副食加強採購，並搭配產地分級分流措施，穩定市場品質與價格
 
 - model: watchlists.MonitorProfile
-  pk: 1410
+  pk: 1510
   fields:
     product: 40016 # 花椰菜
     watchlist: 17
@@ -222,7 +222,7 @@
             採行加工調節措施
 
 - model: watchlists.MonitorProfile
-  pk: 1411
+  pk: 1511
   fields:
     product: 40387 # 蘿蔔
     watchlist: 17
@@ -241,7 +241,7 @@
             辦理促銷、收購購貯作截切及醃漬加工等
 
 - model: watchlists.MonitorProfile
-  pk: 1412
+  pk: 1512
   fields:
     product: 40027 # 胡瓜
     watchlist: 17
@@ -263,7 +263,7 @@
             2.輔導加工
 
 - model: watchlists.MonitorProfile
-  pk: 1413
+  pk: 1513
   fields:
     product: 40030 # 花胡瓜
     watchlist: 17
@@ -285,7 +285,7 @@
             2.輔導加工
 
 - model: watchlists.MonitorProfile
-  pk: 1414
+  pk: 1514
   fields:
     product: 40040 # 絲瓜
     watchlist: 17
@@ -306,7 +306,7 @@
             2.輔導田間疏果，調整上市期間
 
 - model: watchlists.MonitorProfile
-  pk: 1415
+  pk: 1515
   fields:
     product: 40059 # 茄子
     watchlist: 17
@@ -329,7 +329,7 @@
 # Fruits
 
 - model: watchlists.MonitorProfile
-  pk: 1416
+  pk: 1516
   fields:
     product: 50227 # 大西瓜
     watchlist: 17
@@ -367,7 +367,7 @@
 #             採行促銷及加工等措施
 
 - model: watchlists.MonitorProfile
-  pk: 1418
+  pk: 1518
   fields:
     product: 50182 # 梨(新興梨/豐水梨)
     watchlist: 17
@@ -390,7 +390,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1419
+  pk: 1519
   fields:
     product: 50008 # 棗子
     watchlist: 17
@@ -433,7 +433,7 @@
 # 番荔枝109下半年監控清單修改為12月~次年4月
 # 番荔枝112上半年監控清單修改為11月~次年4月
 - model: watchlists.MonitorProfile
-  pk: 1421
+  pk: 1521
   fields:
     product: 50013 # 番荔枝(釋迦)  # 原本標註釋迦大品項50012,因釋迦大品項多了監控產地鳳梨釋迦,導致平台點釋迦大品項就出現批發的監控資訊,改成在各別的品項中才出現監控資訊避免混淆
     watchlist: 17
@@ -456,7 +456,7 @@
 
 # 甜柿102上半年監控清單修改為11月~次年1月
 - model: watchlists.MonitorProfile
-  pk: 1422
+  pk: 1522
   fields:
     product: 50288 # 甜柿
     watchlist: 17
@@ -475,7 +475,7 @@
             與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1423
+  pk: 1523
   fields:
     product: 50144 # 網室木瓜
     watchlist: 17
@@ -498,7 +498,7 @@
 
 # 2024/12/30 114上半年移除監控蓮霧
 #- model: watchlists.MonitorProfile
-#  pk: 1424
+#  pk: 1524
 #  fields:
 #    product: 50202 # 蓮霧
 #    watchlist: 17
@@ -519,7 +519,7 @@
 #            3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1425
+  pk: 1525
   fields:
     product: 50208 # 愛文芒果
     watchlist: 17
@@ -540,7 +540,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1426
+  pk: 1526
   fields:
     product: 50061 # 香蕉
     watchlist: 17
@@ -564,7 +564,7 @@
             4.活絡產地催熟設備，促進在地消費
 
 - model: watchlists.MonitorProfile
-  pk: 1427
+  pk: 1527
   fields:
     product: 50066 # 金鑽鳳梨
     watchlist: 17
@@ -585,7 +585,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1428
+  pk: 1528
   fields:
     product: 50157 # 龍眼
     watchlist: 17
@@ -605,7 +605,7 @@
             2.輔導加工
 
 - model: watchlists.MonitorProfile
-  pk: 1429
+  pk: 1529
   fields:
     product: 50195 # 番石榴(珍珠拔)
     watchlist: 17
@@ -627,7 +627,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1430
+  pk: 1530
   fields:
     product: 50150 # 黑葉荔枝
     watchlist: 17
@@ -648,7 +648,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1431
+  pk: 1531
   fields:
     product: 50016 # 竿採梅
     watchlist: 17
@@ -669,7 +669,7 @@
             3.協調加工業者收購加工
 
 - model: watchlists.MonitorProfile
-  pk: 1432
+  pk: 1532
   fields:
     product: 50039 # 紅龍果
     watchlist: 17
@@ -690,7 +690,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1433
+  pk: 1533
   fields:
     product: 50076 # 椪柑
     watchlist: 17
@@ -709,9 +709,9 @@
             1.輔導加工
             2.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
-#桶柑112上半年監控清單更改為1月~3月
+# 桶柑112上半年監控清單更改為1月~3月
 - model: watchlists.MonitorProfile
-  pk: 1434
+  pk: 1534
   fields:
     product: 50092 # 桶柑
     watchlist: 17
@@ -731,7 +731,7 @@
             2.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1435
+  pk: 1535
   fields:
     product: 50128 # 文旦柚
     watchlist: 17
@@ -752,7 +752,7 @@
             3.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1436
+  pk: 1536
   fields:
     product: 50096 # 柳橙
     watchlist: 17
@@ -772,7 +772,7 @@
             2.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1437
+  pk: 1537
   fields:
     product: 50102 # 檸檬
     watchlist: 17
@@ -792,7 +792,7 @@
             2.辦理國軍、監所團膳促銷，另與超市量販通路擴大行銷；在希望廣場、花博圓山廣場及假日農市定點行銷
 
 - model: watchlists.MonitorProfile
-  pk: 1438
+  pk: 1538
   fields:
     product: 50080 # 茂谷柑
     watchlist: 17
@@ -813,7 +813,7 @@
 
 # 111 年上半年監控清單新增鳳梨釋迦產地
 - model: watchlists.MonitorProfile
-  pk: 1459
+  pk: 1559
   fields:
     product: 59020 # 鳳梨釋迦 產地
     watchlist: 17
@@ -837,7 +837,7 @@
 # 2021/8/6 袁電話通知規格豬監控資訊有兩組下限,所以8/9和葉科討論後將此項刪除,留下107年設定的60元那組下限值設定
 # 2021/12/23 袁詢問過葉科後改成和畜牧處提供的監控價相同(原規格豬有兩組上限兩組下限,改為只留一組下限值)
 - model: watchlists.MonitorProfile
-  pk: 1439
+  pk: 1539
   fields:
     product: 70001 # 規格豬(95-155KG) #2021上半年規格豬改為95-155公斤,但API來源沒有改還是寫75公斤
     watchlist: 17
@@ -934,7 +934,7 @@
 # Cattle
 
 - model: watchlists.MonitorProfile
-  pk: 1444
+  pk: 1544
   fields:
     product: 130001 # 肥育乳公牛550公斤以上
     watchlist: 17
@@ -957,7 +957,7 @@
 # Rams
 
 - model: watchlists.MonitorProfile
-  pk: 1445
+  pk: 1545
   fields:
     product: 80001 # 努比亞雜交閹公羊
     watchlist: 17
@@ -980,7 +980,7 @@
 # Chickens
 
 - model: watchlists.MonitorProfile
-  pk: 1446
+  pk: 1546
   fields:
     product: 90006 # 白肉雞
     watchlist: 17
@@ -1002,7 +1002,7 @@
             (3)拓展外銷通路或市場
 
 - model: watchlists.MonitorProfile
-  pk: 1447
+  pk: 1547
   fields:
     product: 90004 # 紅羽土雞(北區)
     watchlist: 17
@@ -1024,7 +1024,7 @@
             (3)拓展外銷通路或市場
 
 - model: watchlists.MonitorProfile
-  pk: 1448
+  pk: 1548
   fields:
     product: 90007 # 雞蛋
     watchlist: 17
@@ -1048,7 +1048,7 @@
 # Ducks
 
 - model: watchlists.MonitorProfile
-  pk: 1449
+  pk: 1549
   fields:
     product: 100002 # 土番鴨(75天)
     watchlist: 17
@@ -1072,7 +1072,7 @@
 # Seafood
 
 - model: watchlists.MonitorProfile
-  pk: 1450
+  pk: 1550
   fields:
     product: 120007 # 吳郭魚內銷(0.6-0.8公斤/尾)
     watchlist: 17
@@ -1095,7 +1095,7 @@
             3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
 
 - model: watchlists.MonitorProfile
-  pk: 1451
+  pk: 1551
   fields:
     product: 120198 # 虱目魚(0.6-0.8公斤/尾)晚撈
     watchlist: 17
@@ -1118,7 +1118,7 @@
             3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
 
 - model: watchlists.MonitorProfile
-  pk: 1453
+  pk: 1553
   fields:
     product: 120311 # 文蛤 40-60粒/0.6公斤
     watchlist: 17
@@ -1140,7 +1140,7 @@
             3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
 
 - model: watchlists.MonitorProfile
-  pk: 1454
+  pk: 1554
   fields:
     product: 120021 # 金目鱸(0.6-0.8公斤/尾)
     watchlist: 17
@@ -1162,7 +1162,7 @@
             3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
 
 - model: watchlists.MonitorProfile
-  pk: 1455
+  pk: 1555
   fields:
     product: 120040 # 午仔魚(300-375g/尾)
     watchlist: 17
@@ -1184,7 +1184,7 @@
             3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
 
 - model: watchlists.MonitorProfile
-  pk: 1456
+  pk: 1556
   fields:
     product: 120364 # 白蝦(50尾/0.6公斤)
     watchlist: 17
@@ -1206,7 +1206,7 @@
             3.緊急調節：經先期加強行銷措施後仍持續低於監控價2週以上，或政策決定時，鼓勵漁民業團體、加工廠收購、凍儲或獎勵外銷
 
 - model: watchlists.MonitorProfile
-  pk: 1457
+  pk: 1557
   fields:
     product: 121041 # 龍虎斑 0.6-0.9公斤/尾
     watchlist: 17

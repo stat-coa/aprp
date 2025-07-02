@@ -939,7 +939,7 @@
     product: 130001 # 肥育乳公牛550公斤以上
     watchlist: 17
     type: 2
-    price: 100.4
+    price: 101.7
     row: 116
     comparator: __lt__
     color: danger
@@ -962,7 +962,7 @@
     product: 80001 # 努比亞雜交閹公羊
     watchlist: 17
     type: 1
-    price: 163.4
+    price: 155.2
     row: 117
     comparator: __lt__
     color: danger

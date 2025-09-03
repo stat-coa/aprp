@@ -46,10 +46,10 @@ class CropAdmin(admin.ModelAdmin):
         models.CharField: {'widget': TextInput(attrs={'size': '20'})},
     }
     list_display = [
-        'id', 'name', 'code', 'type', 'parent', 'track_item', 'update_time'
+        'id', 'name', 'code', 'type', 'parent', 'config', 'track_item', 'update_time'
     ]
     list_editable = ['name', 'code', 'type', 'parent', 'track_item']
-    fields = ['id', 'name', 'code', 'type', 'parent', 'track_item']
+    fields = ['id', 'name', 'code', 'type', 'parent', 'config', 'track_item', 'unit']
 
     search_fields = ('id', 'code','name')
 

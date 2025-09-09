@@ -44,9 +44,35 @@ class Api(AbstractApi):
             )
             return tran
 
+        def filt_eggs_json_value(key, value):
+            """
+            Normalize the JSON response for eggs (雞蛋).
+
+            Since September 2025, the API changed the format of "雞蛋(產地)" from:
+                "雞蛋(產地)": "31.5"
+            to:
+                "雞蛋(產地)": "(產地)36.5/(大運輸)36.5"
+
+            This function extracts only the "(產地)" part (e.g., "36.5")
+            so that the downstream processing logic remains consistent
+            with the previous response format.
+            """
+            if key == "雞蛋(產地)" and isinstance(value, str):
+                # Try to find value's strings after "(產地)"
+                if "(產地)" in value:
+                    try:
+                        # split value's strings : "(產地)36.5/(大運輸)36.5" -> ["", "36.5", "(大運輸)36.5"]
+                        after_origin = value.split("(產地)")[-1]  # "36.5/(大運輸)36.5"
+                        origin_price = after_origin.split("/")[0]  # "36.5"
+                        return origin_price.strip()
+                    except Exception:
+                        return value.strip()
+            return value.strip() if isinstance(value, str) else value
+
         for key, value in dic.items():
-            if isinstance(value, str):
-                dic[key] = value.strip()
+            dic[key] = filt_eggs_json_value(key, value)
+            # if isinstance(value, str):
+            #     dic[key] = value.strip()
 
         lst = []
         for obj in self.PRODUCT_QS.all():

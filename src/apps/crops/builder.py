@@ -10,7 +10,7 @@ from .models import Crop
 MODELS = [Crop]
 WHOLESALE_DELTA_DAYS = 30
 ORIGIN_DELTA_DAYS = 30
-LOGGER_TYPE_CODE = 'LOT-crops'
+LOGGER_TYPE_CODE = "LOT-crops"
 
 
 @director
@@ -20,12 +20,13 @@ def direct(*args, **kwargs):
     direct_wholesale_02(*args, **kwargs)
 
 
+# 蔬菜(批發)
 @director
 def direct_wholesale_05(start_date, end_date, *args, **kwargs):
-    """ 此 API 為農業部 open data 提供，主要用來抓取批發市場價格資料 """
+    """此 API 為農業部 open data 提供，主要用來抓取批發市場價格資料"""
 
     # config_type=COG05 -> 蔬菜, type_id=1 -> 批發
-    data = DirectData('COG05', 1, LOGGER_TYPE_CODE)
+    data = DirectData("COG05", 1, LOGGER_TYPE_CODE)
 
     for model in MODELS:
         wholesale_api = WholeSaleApi05(model=model, **data._asdict())
@@ -36,19 +37,20 @@ def direct_wholesale_05(start_date, end_date, *args, **kwargs):
             response = wholesale_api.request(
                 start_date=start_date + datetime.timedelta(days=delta),
                 end_date=start_date + datetime.timedelta(days=delta),
-                tc_type='N04'
+                tc_type="N04",
             )
             wholesale_api.load(response)
 
     return data
 
 
+# 蔬菜(產地)
 @director
 def direct_origin(start_date, end_date, *args, **kwargs):
-    """ 此 API 為農糧署農產品產地價格查報系統提供，主要用來抓取產地價格資料 """
+    """此 API 為農糧署農產品產地價格查報系統提供，主要用來抓取產地價格資料"""
 
     # config_type=COG05 -> 蔬菜, type_id=1 -> 產地
-    data = DirectData('COG05', 2, LOGGER_TYPE_CODE)
+    data = DirectData("COG05", 2, LOGGER_TYPE_CODE)
 
     for model in MODELS:
         origin_api = OriginApi(model=model, **data._asdict())
@@ -57,7 +59,8 @@ def direct_origin(start_date, end_date, *args, **kwargs):
             response = origin_api.request(
                 start_date=start_date + datetime.timedelta(days=delta),
                 end_date=start_date + datetime.timedelta(days=delta),
-                *args, **kwargs
+                *args,
+                **kwargs,
             )
             origin_api.load(response)
             # response_garlic = origin_api.request(start_date=start_date + datetime.timedelta(days=delta),
@@ -67,20 +70,19 @@ def direct_origin(start_date, end_date, *args, **kwargs):
     return data
 
 
+# 蔬菜(批發合計)
 @director
 def direct_wholesale_02(start_date, end_date, *args, **kwargs):
-    """ 此 API 由農糧署廠商提供，主要用來抓取各批發市場當日總量與平均價格，相對於上面兩個 API，此 API 較不重要 """
+    """此 API 由農糧署廠商提供，主要用來抓取各批發市場當日總量與平均價格，相對於上面兩個 API，此 API 較不重要"""
 
     # config_type=COG02 -> 蔬菜-批發合計, type_id=1 -> 批發
-    data = DirectData('COG02', 1, LOGGER_TYPE_CODE)
+    data = DirectData("COG02", 1, LOGGER_TYPE_CODE)
 
     for model in MODELS:
-        wholesale_api = WholeSaleApi02(model=model, market_type='V', **data._asdict())
+        wholesale_api = WholeSaleApi02(model=model, market_type="V", **data._asdict())
 
         # This api only provide one day filter
-        for delta_start_date, delta_end_date in date_generator(
-                start_date, end_date, 1
-        ):
+        for delta_start_date, delta_end_date in date_generator(start_date, end_date, 1):
             response = wholesale_api.request(date=delta_start_date)
             wholesale_api.load(response)
 

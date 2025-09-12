@@ -44,35 +44,38 @@ class Api(AbstractApi):
             )
             return tran
 
-        def filt_eggs_json_value(key, value):
+        def add_filtered_egg_price(dic: dict) -> None:
             """
-            Normalize the JSON response for eggs (雞蛋).
-
-            Since September 2025, the API changed the format of "雞蛋(產地)" from:
-                "雞蛋(產地)": "31.5"
-            to:
-                "雞蛋(產地)": "(產地)36.5/(大運輸)36.5"
-
-            This function extracts only the "(產地)" part (e.g., "36.5")
-            so that the downstream processing logic remains consistent
-            with the previous response format.
+            Populate legacy egg field for backward compatibility. 
+            
+            Since 2025/09/10, the API changed key name from:
+                "雞蛋(產地)" to "雞蛋(產地價)"
+            
+            Only populate the field "雞蛋(產地)" by value of "雞蛋(產地價)" 
+            after 2025/09/02.
+            
+            The dictionaries before 2025/09/02 remains original.
             """
-            if key == "雞蛋(產地)" and isinstance(value, str):
-                # Try to find value's strings after "(產地)"
-                if "(產地)" in value:
-                    try:
-                        # split value's strings : "(產地)36.5/(大運輸)36.5" -> ["", "36.5", "(大運輸)36.5"]
-                        after_origin = value.split("(產地)")[-1]  # "36.5/(大運輸)36.5"
-                        origin_price = after_origin.split("/")[0]  # "36.5"
-                        return origin_price.strip()
-                    except Exception:
-                        return value.strip()
-            return value.strip() if isinstance(value, str) else value
+            date_threhsold = datetime.date(2025, 9, 2)
+            response_date_string = (dic.get("日期") or '').strip()
+            try:
+                dt = datetime.datetime.strptime(response_date_string, "%Y/%m/%d").date()
+            except Exception:
+                # Keep original dictionary if date cannot be parsed
+                return 
+            
+            if dt >= date_threhsold:
+                # Utilize value of new key "雞蛋(產地價)" to add old key "產地(產地)"
+                egg_price = dic.get("雞蛋(產地價)")
+                if egg_price : # non-empty and non-None
+                    dic["雞蛋(產地)"] = egg_price
+
+
+        add_filtered_egg_price(dic)
 
         for key, value in dic.items():
-            dic[key] = filt_eggs_json_value(key, value)
-            # if isinstance(value, str):
-            #     dic[key] = value.strip()
+            if isinstance(value, str):
+                dic[key] = value.strip()
 
         lst = []
         for obj in self.PRODUCT_QS.all():

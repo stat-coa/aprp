@@ -23,7 +23,7 @@ app.conf.beat_max_loop_interval = 0
 
 app.conf.beat_schedule = {
     # ======================================== Job ========================================
-    # 監控項目每 15 分鐘更新 1 次
+    # 監控項目 (每 15 分鐘更新 1 次)
     "monitor_profile_active_update": {
         "task": "DefaultWatchlistMonitorProfileUpdate",
         "schedule": crontab(minute="*/15"),
@@ -33,7 +33,7 @@ app.conf.beat_schedule = {
         "task": "DeleteNotUpdatedTrans",
         "schedule": crontab(minute=0, hour="*"),
     },
-    # 日報表更新時間 (周一至周五，時段為 09:00-12:30，每 30 分鐘更新一次)
+    # 日報表 (更新時間:周一至周五，時段為 09:00-12:30，每 30 分鐘更新一次)
     # -1 為更新昨天的報表
     "update_daily_report": {
         "task": "UpdateDailyReport",
@@ -111,7 +111,7 @@ app.conf.beat_schedule = {
     "daily-seafood-origin-builder-3d": {
         "task": "DailyOriginSeafoodBuilder",
         "schedule": crontab(minute=15, hour="11,13", day_of_week="1-5"),
-        "args": (-4,),  # direct 5 day
+        "args": (-4,),  # direct 4 day
     },
     # ======================================== 1 month Builder ========================================
     # 飼料 (更新時間:整月，每日 09:10 & 17:10 會抓整月資料)

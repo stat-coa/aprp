@@ -456,7 +456,7 @@ class DailyReportFactory(object):
         for item in extra_product:
             self._extract_data(item[1], WatchlistItem, item[0], None, self.specify_day)
 
-        # 香蕉台北一二批發
+        # 香蕉(批發, 台北一&台北二)
         self._extract_data(
             74,
             Fruit,
@@ -466,7 +466,7 @@ class DailyReportFactory(object):
         )
 
         # 青香蕉下品(內銷)
-        # (10030, 峨眉鄉農會), (20001,臺北一)
+        # (10030, 峨眉鄉農會), (20001, 臺北一)
         self._extract_data(
             73,
             Fruit,
@@ -512,15 +512,15 @@ class DailyReportFactory(object):
 
     def _extract_data(self, row, model, product_id, sources=None, date=None):
         """
-        50063: 香蕉(批發)
-        50068: (金鑽鳳梨)
+        50063: 香蕉(批發, 台北一&台北二)
+        50068: 金鑽鳳梨(批發, 台北一&台北二)
         59013: 愛文芒果(產地)
         59014: 珍珠芭(產地)
-        59019: 青香蕉下品(內銷)
+        59019: 青香蕉下品(內銷), (10030, 峨眉鄉農會), (20001, 臺北一)
         50299: 寶島甘露梨(批發, 東勢鎮)
-        60068: (香水百合)
+        60068: 香水百合(30001, 臺北花市), (30002, 臺中市場), (30003, 彰化市場), (30004, 臺南市場), (30005, 高雄市場)
         """
-        HIDE_IF_EMPTY_PRODUCTS = {50063, 50068, 59031, 59014, 59019, 50299, 60068}
+        HIDE_IF_EMPTY_PRODUCTS = {50063, 50068, 59013, 59014, 59019, 50299, 60068}
 
         # 只有當週有價格才顯示
         if product_id in HIDE_IF_EMPTY_PRODUCTS:

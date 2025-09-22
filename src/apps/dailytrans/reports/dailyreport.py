@@ -486,6 +486,7 @@ class DailyReportFactory(object):
         )
 
         # 金鑽鳳梨(批發, 台北一&台北二)
+        # 2025/06/06 新增
         self._extract_data(
             77,
             Fruit,
@@ -495,17 +496,20 @@ class DailyReportFactory(object):
         )
 
         # 寶島甘露梨(批發, 東勢鎮) - 僅限 8、9 月顯示
+        # 2025/06/17 新增
         if self.specify_day.month in [8, 9]:
             self._extract_data(
                 56, Fruit, 50299, Source.objects.filter(id=20008), self.specify_day
             )
 
         # 愛文芒果(產地)
+        # 2025/06/17 新增
         self._extract_data(
             70, Fruit, 59013, Source.objects.filter(type_id=2), self.specify_day
         )
 
         # 珍珠芭(產地)
+        # 2025/06/17 新增
         self._extract_data(
             82, Fruit, 59014, Source.objects.filter(type_id=2), self.specify_day
         )

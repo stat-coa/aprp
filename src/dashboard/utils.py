@@ -127,38 +127,55 @@ def jarvismenu_extra_context(view):
     return extra_context
 
 
-def _natural_key(s):
+def _lex_key(code_or_name):
     """
+    (字典序)
+    None/'' 空值排最後
+    ex. 11 < 2
+    """
+    if code_or_name is None or code_or_name == "":
+        return (1, "")
+    value = str(code_or_name).casefold()  # 不分大小寫比較
+    return (0, value)
+
+
+def _natural_key(code_or_name):
+    """
+    (人類直覺排序)
     把字母和數字拆開來比
-    直覺的數字大小 (ex. 5 < 49)
+    直覺的數字大小
+    None/'' 空值排最後
+    ex. 5 < 49
     'S49' -> ('S', 49)
     '813' -> (813,)
-    None/'' 空值排最後
     """
 
-    if s is None or s == "":
+    if code_or_name is None or code_or_name == "":
         return (float("inf"),)
-    parts = re.split(r"(\d+)", str(s))
-    return tuple(int(p) if p.isdigit() else p for p in parts)
+    parts = re.split(r"(\d+)", str(code_or_name))
+    return tuple(int(part) if part.isdigit() else part for part in parts)
 
 
-def _group_key(p):
+def _group_key(product):
     """
     同名稱放一起
     有 parent 取 parent.name, 否則取自己 name
     """
-    return (p.parent.name if getattr(p, "parent_id", None) else p.name) or ""
+    return (
+        product.parent.name if getattr(product, "parent_id", None) else product.name
+    ) or ""
 
 
-def _product_sort_key(p, config_id, type_id):
+def _product_sort_key(product, config_id, type_id):
     """
-    先比名稱排序，再用代號排序
+    先用代號排序 (inner)，再用名稱排序，最後才用群組排序 (group)
     漁產品只有名稱跟代號所以只用代號排序
     """
-    inner = _natural_key(getattr(p, "code", None)) or _natural_key(p.name)
+    inner = _lex_key(getattr(product, "code", None)) or _lex_key(product.name)
 
-    group = "" if str(config_id) == "13" else _group_key(p)
-    return (group, inner, _natural_key(p.name), p.id)
+    group = "" if str(config_id) == "13" else _group_key(product)
+
+    return (inner, _lex_key(product.name), group, product.id)
 
 
 def product_selector_ui_extra_context(view):
@@ -210,16 +227,14 @@ def product_selector_ui_extra_context(view):
         extra_context["products"] = products
         extra_context["sources"] = config.source_set.all().filter(type__id=type_id)
 
-        # 排序：同名（parent.name 或 name）→ 組內自然排序（代號；13+2 用 name
+        # 排序：同名（parent.name 或 name）→ 組內自然排序
         # 把 QuerySet 轉成 list 才能使用 Python 的自訂排序
         products_list = list(products)
         products_list.sort(key=lambda p: _product_sort_key(p, config_id, type_id))
 
         extra_context["products"] = products_list
-        extra_context["sources"] = (
-            config.source_set.all().filter(type__id=type_id)
-            # .order_by("name")
-        )
+        # .order_by("name")
+        extra_context["sources"] = config.source_set.filter(type__id=type_id)
 
     return extra_context
 

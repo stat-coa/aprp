@@ -4,6 +4,7 @@ import json
 import pandas as pd
 
 from apps.dailytrans.models import DailyTran
+from apps.accounts.utils import mail_new_product_once_today
 from .abstract import AbstractApi
 from .utils import date_transfer
 
@@ -124,6 +125,9 @@ class Api(AbstractApi):
                 '上價', '中價', '下價', '平均價', '交易量', '交易日期', '作物代號', '市場名稱','種類代碼'
             ]
         )
+
+        self._check_if_new_product_exist(data)
+
         data = data[data['作物代號'].isin(self.target_items)]
 
         try:
@@ -217,3 +221,24 @@ class Api(AbstractApi):
             date=value['date']
         ) for product in products]
         DailyTran.objects.bulk_create(new_trans)
+        
+
+    def _check_if_new_product_exist(self, data: pd.DataFrame):
+        """
+        Check if there's new product from API that DB doesn't have.
+        """
+        # 正規化成大寫、去空白，避免 'rest' / 'REST' / ' Rest ' 等差異
+        api_codes_series = data["作物代號"].astype(str).str.strip().str.upper()
+        api_codes = set(api_codes_series)
+
+        db_codes = {str(x).strip().upper() for x in self.target_items}
+
+        # relative complement of DB's codes in API's codes  
+        new_codes_on_api = api_codes - db_codes
+
+        # 只在這裡排除休市代碼，不影響其他流程
+        # new_codes_on_api.discard("REST")
+        if new_codes_on_api:
+            sorted_new_codes_on_api = sorted(new_codes_on_api)
+            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes_on_api)
+            self.LOGGER.info("mailed_today=%s codes=%s", mailed, sorted_new_codes_on_api, extra=self.LOGGER_EXTRA)

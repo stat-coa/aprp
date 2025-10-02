@@ -11,6 +11,8 @@ from requests import Response
 from apps.dailytrans.models import DailyTran
 from .abstract import AbstractApi
 from .utils import date_transfer
+from apps.fruits.models import Fruit
+from apps.accounts.utils import mail_new_product_once_today
 
 urllib3.disable_warnings()
 
@@ -305,6 +307,8 @@ class Api(AbstractApi):
         # data should look like [D, B, {}, C, {}...] after loads
         if not data:
             return
+        
+        self._check_if_new_product_exist(data)
 
         data_api = self._convert_to_data_frame(data)
 
@@ -426,3 +430,38 @@ class Api(AbstractApi):
 
         # bulk create the new records
         DailyTran.objects.bulk_create(new_trans_list)
+
+
+    def _check_if_new_product_exist(self, raw_data: list):
+        """
+        Check if there's new product from API that DB doesn't have.
+
+        Note: Need to import 
+        """
+        def _norm(x) -> str:
+            return ("" if x is None else str(x)).strip().upper()
+        df_raw = pd.DataFrame(raw_data)
+    
+        api_series  = df_raw.get('PRODUCTNAME', pd.Series(dtype=str)).astype(str).str.strip()
+        api_codes = { _norm(x) for x in api_series.tolist() } 
+        print(api_codes)
+
+        # 以 DB 既有品項為基準做差集
+        crop_codes = {
+            _norm(code) for code in self.target_items
+        }
+        fruit_codes = {
+            _norm(code) for code in
+            Fruit.objects.filter(type=self.TYPE, track_item=True)
+                        .values_list("code", flat=True)
+        }
+        
+        db_codes = crop_codes | fruit_codes
+        # relative complement of DB's codes in API's codes  
+        new_codes_on_api = api_codes - db_codes
+
+
+        if new_codes_on_api:
+            sorted_new_codes_on_api = sorted(new_codes_on_api)
+            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.TYPE, sorted_new_codes_on_api)
+            self.LOGGER.info("mailed_today=%s codes=%s", mailed, sorted_new_codes_on_api, extra=self.LOGGER_EXTRA)

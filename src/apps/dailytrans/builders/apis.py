@@ -463,5 +463,5 @@ class Api(AbstractApi):
 
         if new_codes_on_api:
             sorted_new_codes_on_api = sorted(new_codes_on_api)
-            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.TYPE, sorted_new_codes_on_api)
+            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes_on_api)
             self.LOGGER.info("mailed_today=%s codes=%s", mailed, sorted_new_codes_on_api, extra=self.LOGGER_EXTRA)

@@ -236,8 +236,8 @@ class Api(AbstractApi):
         # relative complement of DB's codes in API's codes  
         new_codes_on_api = api_codes - db_codes
 
-        # 只在這裡排除休市代碼，不影響其他流程
-        # new_codes_on_api.discard("REST")
+        # 只在這裡排除批發市場之休市代碼，不影響其他流程
+        new_codes_on_api.discard("REST")
         if new_codes_on_api:
             sorted_new_codes_on_api = sorted(new_codes_on_api)
             mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes_on_api)

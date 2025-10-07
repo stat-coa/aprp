@@ -38,13 +38,19 @@ class FruitModelForm(ModelForm):
         )
 
         self.fields["id"] = forms.IntegerField(widget=forms.TextInput())
-        self.fields["parent"].choices = self.parent_field_choices
+        # Let parent field can use '------' option as None 
+        parent_field = self.fields['parent']
+        parent_field.queryset = Fruit.objects.all()
+        parent_field.required = False
+        parent_field.empty_label = '---------'
+        parent_field.label_from_instance = lambda obj: f"{obj.id} ({obj.name})"
+        # self.fields["parent"].choices = self.parent_field_choices
 
-    @property
-    def parent_field_choices(self):
-        qs_products = Fruit.objects.all()
+    # @property
+    # def parent_field_choices(self):
+    #     qs_products = Fruit.objects.all()
 
-        return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_products]
+    #     return [(obj.id, f"{obj.id} ({obj.name})") for obj in qs_products]
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -122,7 +122,7 @@ class Api(AbstractApi):
                     f'exception: {e}, response: {response.text}', extra=self.LOGGER_EXTRA)
         data = pd.DataFrame(
             data,columns=[
-                '上價', '中價', '下價', '平均價', '交易量', '交易日期', '作物代號', '市場名稱','種類代碼'
+                '上價', '中價', '下價', '平均價', '交易量', '交易日期', '作物代號', '作物名稱', '市場名稱', '種類代碼'
             ]
         )
 

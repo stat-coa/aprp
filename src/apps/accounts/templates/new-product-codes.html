@@ -5,12 +5,15 @@
   <title>新增代碼通知</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", Arial, "Microsoft JhengHei", sans-serif; line-height: 1.6; }
-    .wrap { max-width: 680px; margin: 0 auto; padding: 16px 20px; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 16px 20px; }
     .header { border-bottom: 2px solid #e5e7eb; margin-bottom: 12px; padding-bottom: 8px; }
     .pill { display: inline-block; background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 999px; font-size: 12px; vertical-align: middle; }
-    .codes { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin: 12px 0; }
-    .codes code { padding: 2px 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; margin: 2px 6px 6px 0; display: inline-block; }
+    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; white-space: nowrap; }
+    th { background: #f3f4f6; font-weight: 600; }
     .footer { color: #6b7280; font-size: 12px; margin-top: 16px; }
+    .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#e5f3ff; color:#0b60a9; font-size:12px; }
   </style>
 </head>
 <body>
@@ -20,13 +23,26 @@
     <div class="pill">{% now "Y-m-d H:i" %}</div>
   </div>
 
-  <p>系統偵測到 <strong>{{ codes|length }}</strong> 個 API 回傳但資料庫未追蹤的產品代碼：</p>
+  <p>系統偵測到 <strong>{{ rows|length }}</strong> 個 API 回傳但資料庫未追蹤的產品代碼：</p>
 
-  {% if codes %}
-  <div class="codes">
-    {% for c in codes %}
-      <code>{{ c }}</code>
-    {% endfor %}
+  {% if rows %}
+  <div class="card">
+    <table role="table" aria-label="新增品項清單">
+      <thead>
+        <tr>
+          <th style="width: 160px;">品項代碼</th>
+          <th>品項名稱</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for code, name in rows %}
+        <tr>
+          <td><span class="badge">{{ code }}</span></td>
+          <td>{{ name }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
   {% else %}
   <p>目前沒有新代碼。</p>

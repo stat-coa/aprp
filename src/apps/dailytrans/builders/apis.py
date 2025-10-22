@@ -462,6 +462,11 @@ class Api(AbstractApi):
 
 
         if new_codes_on_api:
+            # Origin-place responses only provide PRODUCTNAME, and our DB also uses
+            # PRODUCTNAME for both the item "code" and "name".
+            # Therefore, treat each new PRODUCTNAME as both code and name.
+    
             sorted_new_codes_on_api = sorted(new_codes_on_api)
-            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes_on_api)
+            new_names = new_codes_on_api
+            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes_on_api, new_names)
             self.LOGGER.info("mailed_today=%s codes=%s", mailed, sorted_new_codes_on_api, extra=self.LOGGER_EXTRA)

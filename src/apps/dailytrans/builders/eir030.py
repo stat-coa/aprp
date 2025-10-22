@@ -239,6 +239,17 @@ class Api(AbstractApi):
         # 只在這裡排除批發市場之休市代碼，不影響其他流程
         new_codes_on_api.discard("REST")
         if new_codes_on_api:
-            sorted_new_codes_on_api = sorted(new_codes_on_api)
-            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes_on_api)
-            self.LOGGER.info("mailed_today=%s codes=%s", mailed, sorted_new_codes_on_api, extra=self.LOGGER_EXTRA)
+            # print(new_codes_on_api)
+            tmp = (
+                data.assign(_code=data["作物代號"].astype(str).str.strip().str.upper())
+                    .dropna(subset=["_code"])
+            )
+            # 只保留 code 與 name
+            tmp = tmp[["_code", "作物名稱"]].drop_duplicates()
+            code_to_name = dict(zip(tmp["_code"], tmp["作物名稱"].astype(str)))
+
+            # 若 API 沒提供名稱，預設空字串（或可改成和代碼相同）
+            sorted_new_codes = sorted(new_codes_on_api)
+            new_names = [code_to_name.get(c, "") for c in sorted_new_codes]
+            mailed = mail_new_product_once_today(self.API_NAME, self.CONFIG.code, self.CONFIG.name, self.TYPE.id, self.TYPE.name, sorted_new_codes, new_names)
+            self.LOGGER.info("mailed_today=%s codes=%s", mailed, sorted_new_codes, extra=self.LOGGER_EXTRA)

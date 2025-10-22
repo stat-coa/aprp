@@ -120,15 +120,32 @@ def mail_once_today(key_parts: list, send_callable: Callable[[], None]) -> bool:
     return False
 
 
-def mail_new_product_once_today(api_name: str, config_code: str, config_name: str, type_id: str, type_name: str, new_product_codes: List[str]):
-    mailed = mail_once_today(
-    key_parts=[api_name, config_code, type_id],
-    send_callable=lambda: notify_group(
-        "Gmail測試群組",
-        f"[{config_name}-{type_name}] 新增品項偵測",
-        {"api_name": f"{config_name}-{type_name}: {api_name}",
-        "codes": new_product_codes}
-        )
-    )
+def mail_new_product_once_today(
+    api_name: str,
+    config_code: str,
+    config_name: str,
+    type_id: str,
+    type_name: str,
+    new_product_codes: List[str],
+    new_product_names: List[str],   # <== 新增
+):
+    """
+    Wrap name/code pairs into rows
+    that emailer can sending table of new products row by row
+    """
+    rows = list(zip(new_product_codes, new_product_names))
 
+    mailed = mail_once_today(
+        key_parts=[api_name, config_code, type_id],
+        send_callable=lambda: notify_group(
+            "Gmail測試群組",
+            f"[{config_name}-{type_name}] 新增品項偵測",
+            {
+                "api_name": f"{config_name}-{type_name}: {api_name}",
+                # "codes": new_product_codes,
+                # "names": new_product_names,
+                "rows": rows
+            },
+        ),
+    )
     return mailed

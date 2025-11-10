@@ -13,7 +13,6 @@ from apps.dailytrans.models import DailyReport, FestivalReport
 from apps.dailytrans.reports.dailyreport import DailyReportFactory
 from apps.dailytrans.reports.festivalreport import FestivalReportFactory
 from apps.dailytrans.reports.last5yearsreport import Last5YearsReportFactory
-from apps.dailytrans.reports.excel_postprocessor import DailyReportPostProcessor
 from distutils.util import strtobool
 import logging
 from apps.configs.models import Festival, FestivalItems, FestivalName, AbstractProduct
@@ -66,7 +65,6 @@ def download_daily_report(request):
     if not file_path:
         factory = DailyReportFactory(specify_day=date)
         file_name, file_path = factory()
-        DailyReportPostProcessor(str(file_path)).process()  # ← 後處理 excel
 
 
     with open(file_path, 'rb') as f:

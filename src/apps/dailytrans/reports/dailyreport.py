@@ -17,6 +17,7 @@ from sqlalchemy.engine import Engine
 from apps.configs.models import Source, AbstractProduct
 from apps.dailytrans.models import DailyTran, DailyTranQuerySet
 from apps.dailytrans.utils import get_group_by_date_query_set
+from apps.dailytrans.reports.excel_postprocessor import DailyReportPostProcessor
 from apps.flowers.models import Flower
 from apps.fruits.models import Fruit
 from apps.watchlists.models import Watchlist, WatchlistItem, MonitorProfile
@@ -693,6 +694,12 @@ class DailyReportFactory(object):
 
         self.report()
         sheet = self.get_sheet()
+
+        # Postprocess the workbook: hide the row without data except pig
+        # And set new page break in workbook
+        sheet = DailyReportPostProcessor().process(sheet)  # ← 新增這一行
+
+
         sheet.save(file_path)
 
         return file_name, file_path

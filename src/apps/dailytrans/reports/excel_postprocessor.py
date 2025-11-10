@@ -1,5 +1,6 @@
 # excel_postprocessor.py
 from openpyxl import load_workbook
+from openpyxl.workbook import Workbook
 from openpyxl.worksheet.pagebreak import PageBreak, Break
 
 
@@ -11,8 +12,8 @@ class DailyReportPostProcessor:
     DATA_ROW_END_FALLBACK = 152       # 覆蓋到說明區
     COL_M, COL_S = 13, 19             # M~S
 
-    def __init__(self, file_path: str):
-        self.file_path = str(file_path)
+    # def __init__(self, file_path: str):
+    #     self.file_path = str(file_path)
 
     def _hide_rows_with_dash_in_M_to_S(self, ws, start_row: int, end_row: int, keep_rows=None):        
         keep = set(keep_rows or [])  # 例如 {119, 135} : 保留豬 -> 118
@@ -48,9 +49,7 @@ class DailyReportPostProcessor:
                     last = max(last, r)
         return last
 
-    def process(self):
-        # 先用 openpyxl 做你要的隱藏列，並存檔
-        wb = load_workbook(self.file_path)
+    def process(self, wb: Workbook):
         ws = wb[wb.sheetnames[0]]
         self._hide_rows_with_dash_in_M_to_S(ws, self.DATA_ROW_START, self.DATA_ROW_END_FALLBACK, keep_rows= [118])
 
@@ -59,11 +58,17 @@ class DailyReportPostProcessor:
 
         ws.print_area = f"A1:U{last_raw}"
 
-        ws.row_breaks = PageBreak()
-        ws.col_breaks  = PageBreak()  # 或保留原物件
-        ws.row_breaks.append(Break(id=target_raw - 1))   # 在第5列後（5/6之間）切
 
-        ws.page_breaks = (ws.row_breaks, ws.col_breaks)  # 關鍵：把 tuple 也換掉
-        wb.save(self.file_path)
+        # Characteristic in old version's openpyxl: we need to update page_breaks attribute to update break points in page
+        # Note: Basic kownledge of memory address allocation in tuple: if we need to update the values in tuple, 
+        # we should assign not only elements, but also whole tuple variable 
+        ws.row_breaks = PageBreak()
+        ws.col_breaks  = PageBreak() 
+        ws.row_breaks.append(Break(id=target_raw - 1))  # Update break points in row_breaks
+
+        ws.page_breaks = (ws.row_breaks, ws.col_breaks)  # We need to assign new elements' values into tuple variable (Recap pointer, references knowledge.)
+        
+        return wb
+
 
         

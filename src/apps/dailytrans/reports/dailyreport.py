@@ -2,7 +2,7 @@ import calendar
 import datetime
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Set
 
 import numpy as np
 import openpyxl
@@ -148,6 +148,10 @@ class DailyReportFactory(object):
         self.generate_list_dict()
         self.item_desc = []
 
+        # 記錄「本週有實際數值」的品項名稱，用來決定是否顯示資料來源說明
+        self.products_with_data_this_week: Set[str] = set()
+
+
     def generate_list_dict(self):
         """
         The dict will like this:
@@ -197,6 +201,10 @@ class DailyReportFactory(object):
                 elif self.specify_day.month in [7, 8]:
                     self.item_desc.append("新興梨")
             else:
+                # desc_1 的一般農產品（紅豆、甘薯等）：只有本週有實際數值才顯示資料來源說明
+                # 若本週沒有任何資料，就不要加說明，直接結束
+                if not self._has_this_week_data(profile):
+                    return
                 self.item_desc.append(profile.product.name)
 
     def input_sheet_date(self, sheet, index):
@@ -269,6 +277,12 @@ class DailyReportFactory(object):
             (pd.to_datetime(df["date"]).dt.date >= self.this_week_start.date())
             & (pd.to_datetime(df["date"]).dt.date <= self.this_week_end.date())
         ]
+
+
+        # 若本週有任何一筆資料，記錄該品項名稱，供之後說明欄位使用
+        if not this_week_df.empty:
+            self.products_with_data_this_week.add(product_name)
+            
 
         last_week_avg_price = get_avg_price(last_week_df, has_volume, has_weight)
         this_week_avg_price = get_avg_price(this_week_df, has_volume, has_weight)
@@ -382,6 +396,19 @@ class DailyReportFactory(object):
                     * 100
                 }
             )
+
+    def _has_this_week_data(self, profile: MonitorProfile) -> bool:
+        """
+        回傳此監控品項本週是否有實際數據。
+
+        注意：
+        - report() 會先對所有監控品項呼叫 get_data()，get_data() 會在本週有資料時
+        將 product_name 加入 self.products_with_data_this_week。
+        - 因此本方法假設 get_data() 已先被呼叫。
+        """
+        name = profile.product.name
+        return name in getattr(self, "products_with_data_this_week", set())
+
 
     def report(self):
         watchlist = Watchlist.objects.filter(

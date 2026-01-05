@@ -80,11 +80,50 @@ class SourceModelForm(ModelForm):
         model = Source
         exclude = ['update_time']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if not (self.instance and self.instance.pk):
+            self.fields["id"] = forms.IntegerField(
+                required=True,
+                widget=forms.TextInput()
+            )
+
+
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # 只在新增時才從表單指定 id
+        if not instance.pk:
+            instance.id = self.cleaned_data["id"]
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+
 
 class SourceAdmin(admin.ModelAdmin):
     form = SourceModelForm
     list_display = ['id', 'name', 'alias', 'code', 'update_time']
     list_editable = ['name', 'code']
+    # fields = [
+    #     'id', 'name', 'code', 'config', 'type', 'parent', 'track_item', 'unit'
+    # ]
+    def get_fields(self, request, obj=None):
+        fields = list(super().get_fields(request, obj))
+        if obj is None:
+            # 新增：確保 id 在最前面
+            if "id" not in fields:
+                fields.insert(0, "id")
+            else:
+                fields.remove("id")
+                fields.insert(0, "id")
+        else:
+            # 編輯：完全不顯示/不包含 id
+            fields = [f for f in fields if f != "id"]
+        return fields
 
 
 class TypeModelForm(ModelForm):

@@ -3,9 +3,9 @@
   fields:
     name: 115上半年
     user: 1
-    is_default: False
-    start_date: 2025-01-01
-    end_date: 2025-06-30
+    is_default: True
+    start_date: 2026-01-01
+    end_date: 2026-06-30
 
 # Rices
 - model: watchlists.WatchlistItem
@@ -32,7 +32,7 @@
   pk: 16102
   fields:
     product: 49003 # 紅豆(中等) 產地
-    sources: [10058, 10057, 10044]
+    sources: [10058, 10057, 10044, 10137]
     parent: 18
 
 - model: watchlists.WatchlistItem

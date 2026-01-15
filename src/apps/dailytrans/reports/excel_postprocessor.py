@@ -68,6 +68,9 @@ class DailyReportPostProcessor:
 
         ws.page_breaks = (ws.row_breaks, ws.col_breaks)  # We need to assign new elements' values into tuple variable (Recap pointer, references knowledge.)
         
+        # Set the zoom scale to 70%
+        ws.sheet_view.zoomScale = 70
+        
         return wb
 
 

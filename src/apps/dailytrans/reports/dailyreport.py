@@ -89,6 +89,8 @@ desc_1 = [
     ("梅", "竿採梅產地價格(國姓、六龜、甲仙和東河等農會查報價格之簡單平均)"),
     ("鳳梨釋迦", "鳳梨釋迦產地價格(台東地區農會查報價格)"),
 ]
+# 敘述類desc_1 針對香蕉註釋過長，進行換行用字串處理
+BANANA_SPLIT = "(下品-中寮及中埔農會查報下品價格之簡單平均)"
 
 desc_2 = ["豐水梨", "新興梨", "寶島甘露梨"]
 
@@ -661,7 +663,7 @@ class DailyReportFactory(object):
         for rows in sheet["A135:U152"]:
             for cell in rows:
                 # 資料來源字型統一為標楷體
-                cell.font = Font(name="標楷體", size=13)
+                cell.font = Font(name="標楷體", size=16)
                 row_no = cell.row
 
                 if row_no > 138:
@@ -677,16 +679,37 @@ class DailyReportFactory(object):
         now_row = 139
 
         # 一般農產品的資料來源說明欄位處理
-        for i in desc_1:
-            item_name = i[0]
-            desc_1_text = i[1]
+        # for i in desc_1:
+        #     item_name = i[0]
+        #     desc_1_text = i[1]
 
-            # append_desc
-            if item_name in self.item_desc:
-                td = sheet.cell(row=now_row, column=1)
-                tmp = (now_row == 139 and "3.") or "   "
-                td.value = f"{tmp}{desc_1_text}；"
+        #     # append_desc
+        #     if item_name in self.item_desc:
+        #         td = sheet.cell(row=now_row, column=1)
+        #         tmp = (now_row == 139 and "3.") or "   "
+        #         td.value = f"{tmp}{desc_1_text}；"
+        #         now_row += 1
+        for item_name, desc_1_text in desc_1:
+            if item_name not in self.item_desc:
+                continue
+
+            tmp = '3.' if now_row == 139 else '   '
+
+            # 香蕉：拆兩列
+            if item_name == '香蕉' and BANANA_SPLIT in desc_1_text:
+                banana_head = desc_1_text.replace(BANANA_SPLIT, "")
+                sheet.cell(row=now_row, column=1).value = f"{tmp}{banana_head}"
                 now_row += 1
+
+                # 第二列固定縮排
+                banana_tail = BANANA_SPLIT
+                sheet.cell(row=now_row, column=1).value = f"   {banana_tail}；"
+                now_row += 1
+                continue
+
+            # 其他品項：一列
+            sheet.cell(row=now_row, column=1).value = f"{tmp}{desc_1_text}；"
+            now_row += 1
 
         td = sheet.cell(row=now_row - 1, column=1)
         td.value = td.value.replace("；", "—農產品價格查報，本部農糧署。")

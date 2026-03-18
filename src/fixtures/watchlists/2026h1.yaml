@@ -39,7 +39,7 @@
   pk: 16103
   fields:
     product: 49001 # 甘藷 產地
-    sources: [10059, 10060]
+    sources: [10059, 10060, 10138]
     parent: 18
 
 - model: watchlists.WatchlistItem

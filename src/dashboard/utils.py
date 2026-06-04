@@ -36,6 +36,15 @@ from dashboard.caches import redis_instance as cache
 
 CONTENT_TYPE_CONFIG_CHARTS_CACHE_KEY = "content_type_config{config_id}_charts"
 CONTENT_TYPE_PRODUCT_CHARTS_CACHE_KEY = "content_type_product{product_id}_charts"
+NON_MONITOR_PRODUCTS_BY_PARENT = {
+    "120001": [ # 在監控清單的養殖類(120001)後面新增非監控品項
+        {
+            "name": "鰻魚(3尾/斤)",
+            "title": "1031",
+            "url": "/chart-tab/chart/?config=13&type=2&sources=_&products=120961&include_event=1",
+        },
+    ]
+}
 
 
 def jarvismenu_extra_context(view):
@@ -92,6 +101,8 @@ def jarvismenu_extra_context(view):
     # 品項第二層以後
     elif content_type == "abstractproduct":
         product = AbstractProduct.objects.get(id=object_id)
+        # Add Non-monitor products if exist
+        extra_context["non_monitor_items"] = NON_MONITOR_PRODUCTS_BY_PARENT.get(str(product.id), [])
         extra_context["lct"] = "abstractproduct"
         extra_context["loi"] = product.id
         children_has_monitor_profile = MonitorProfile.objects.filter(
@@ -248,9 +259,15 @@ def chart_tab_extra_context(view):
     type_id = params.get("type")
     product_ids = params.get("products")  # string with separator
     source_ids = params.get("sources")  # string with separator
+    include_event = params.get('include_event', '0') == '1' # for specific product which should show event(產銷事件簿), e.g. 鰻魚
+
+    # Set list of charts
+    chart_ids = [1, 2, 3, 4]
+    if include_event:
+        chart_ids.append(5)
 
     extra_context["charts"] = Config.objects.get(id=config_id).charts.filter(
-        id__in=[1, 2, 3, 4]
+        id__in=chart_ids
     )
     extra_context["type"] = type_id
     extra_context["products"] = "_".join(product_ids.split(",")) if product_ids else "_"
@@ -385,7 +402,7 @@ def product_selector_base_extra_context(view):
     # get tran data by chart
     series_options = []
 
-    if chart_id in ["1", "2"]:
+    if chart_id in ["1", "2", "5"]:
         end_date = datetime.date.today() if chart_id == "1" else None
         start_date = (
             end_date + datetime.timedelta(days=-13) if chart_id == "1" else None
@@ -399,6 +416,17 @@ def product_selector_base_extra_context(view):
         )
         if not option["no_data"]:
             series_options.append(option)
+
+        # chart 5 is the only chart need to consider event
+        if chart_id == '5':
+            event_form = EventForm()
+            extra_context['event_form'] = event_form
+            extra_context['event_form_js'] = [
+                event_form.media.absolute_path(js)
+                for js in event_form.media._js[1:]
+            ]
+            extra_context['event_content_type_id'] = ContentType.objects.get(model='abstractproduct').id
+            extra_context['event_object_id'] = product_ids[0] if product_ids else None
 
     if chart_id == "3":
         option = get_daily_price_by_year(_type=_type, items=products, sources=sources)

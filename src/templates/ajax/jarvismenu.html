@@ -13,4 +13,12 @@
             <!-- dynamically load ul here -->
         </li>
     {% endfor %}
+
+    {% for item in non_monitor_items %}
+        <li>
+            <a href="{{ item.url }}" title="{{ item.title }}">
+                <span class="menu-item-parent">{{ item.name }}</span>
+            </a>
+        </li>
+    {% endfor %}
 </ul>

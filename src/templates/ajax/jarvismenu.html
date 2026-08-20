@@ -2,14 +2,19 @@
     {% for item in items %}
 
         <li>
-            <!-- if don't navigate on this item, set href to # -->
-            <a title="{{ item.name }}"
-               href="{% if item.to_direct %}{% url 'chart_tab' wi=wi ct=ct oi=item.id lct=lct loi=loi %}{% else %}#{% endif %}"
-               data-load data-load-url="{% url 'jarvismenu' wi=wi ct=ct oi=item.id lct=lct loi=loi %}">
+            <!-- Add suffix by source name to specific watchlist item -->
+            {% with display_name=item|watchlist_display_name %}
+                <!-- if don't navigate on this item, set href to # -->
+                <!-- <a title="{{ item.name }}" -->
+                <a title="{{ display_name }}"
+                href="{% if item.to_direct %}{% url 'chart_tab' wi=wi ct=ct oi=item.id lct=lct loi=loi %}{% else %}#{% endif %}"
+                data-load data-load-url="{% url 'jarvismenu' wi=wi ct=ct oi=item.id lct=lct loi=loi %}">
 
-                {% include 'contents/color-alert.html' with item=item %}
-                <span class="menu-item-parent">{{ item.name }}</span>
-            </a>
+                    {% include 'contents/color-alert.html' with item=item %}
+                    <span class="menu-item-parent">{{ display_name }}</span>
+                    <!-- <span class="menu-item-parent">{{ item.name }}</span> -->
+                </a>
+            {% endwith %}
             <!-- dynamically load ul here -->
         </li>
     {% endfor %}

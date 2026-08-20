@@ -50,3 +50,21 @@ def get_monitor_profile(obj, watchlist):
 @register.filter
 def profile_color_filter(qs, color):
     return qs.filter(color=color)
+
+
+## Add suffix name by source name after watchlist item
+# Ex: "梨-寶島甘露梨" ->  "寶島甘露梨(東勢鎮)"
+
+WATCHLIST_PRODUCT_DISPLAY_NAMES = {
+    50299: "梨-寶島甘露梨(東勢鎮)",
+    50186: "梨-豐水梨(東勢鎮)",
+    50185: "梨-新興梨(東勢鎮)",
+    50289: "柿子-甜柿(東勢鎮)",
+}
+
+@register.filter
+def watchlist_display_name(item):
+    if isinstance(item, AbstractProduct):
+        return WATCHLIST_PRODUCT_DISPLAY_NAMES.get(item.id, item.name)
+
+    return item.name

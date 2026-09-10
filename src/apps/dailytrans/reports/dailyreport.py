@@ -437,14 +437,21 @@ class DailyReportFactory(object):
             query_set = DailyTran.objects.filter(product__in=item.product_list())
 
             # 因應措施是梨
-            if self.specify_day.month in [5, 6]:
-                if item.product.id == 50182:
-                    # 5, 6 月只抓豐水梨 50186
-                    query_set = query_set.filter(product=50186)
-            elif self.specify_day.month in [7, 8]:
-                if item.product.id == 50182:
-                    # 7, 8 月只抓新興梨 50185
-                    query_set = query_set.filter(product=50185)
+            if item.product.id == 50182:
+                if self.specify_day.month in [5, 6]:
+                    query_set = query_set.filter(product=50186)  # 豐水梨
+                elif self.specify_day.month in [7, 8, 9]:
+                    query_set = query_set.filter(product=50185)  # 新興梨
+                else:
+                    query_set = query_set.none()
+            # if self.specify_day.month in [5, 6]:
+            #     if item.product.id == 50182:
+            #         # 5, 6 月只抓豐水梨 50186
+            #         query_set = query_set.filter(product=50186)
+            # elif self.specify_day.month in [7, 8]:
+            #     if item.product.id == 50182:
+            #         # 7, 8 月只抓新興梨 50185
+            #         query_set = query_set.filter(product=50185)
 
             if item.sources():
                 query_set = query_set.filter(source__in=item.sources())
@@ -459,14 +466,21 @@ class DailyReportFactory(object):
             )
 
             # 因應措施是梨
-            if self.specify_day.month in [5, 6]:
-                if item.product.id == 50182:
-                    # 56只抓豐水梨 50186
-                    query_set = query_set.filter(product=50186)
-            elif self.specify_day.month in [7, 8]:
-                if item.product.id == 50182:
-                    # 78只抓新興梨 50185
-                    query_set = query_set.filter(product=50185)
+            if item.product.id == 50182:
+                if self.specify_day.month in [5, 6]:
+                    query_set = query_set.filter(product=50186)  # 豐水梨
+                elif self.specify_day.month in [7, 8, 9]:
+                    query_set = query_set.filter(product=50185)  # 新興梨
+                else:
+                    query_set = query_set.none()
+            # if self.specify_day.month in [5, 6]:
+            #     if item.product.id == 50182:
+            #         # 56只抓豐水梨 50186
+            #         query_set = query_set.filter(product=50186)
+            # elif self.specify_day.month in [7, 8]:
+            #     if item.product.id == 50182:
+            #         # 78只抓新興梨 50185
+            #         query_set = query_set.filter(product=50185)
 
             if item.sources():
                 query_set = query_set.filter(source__in=item.sources())

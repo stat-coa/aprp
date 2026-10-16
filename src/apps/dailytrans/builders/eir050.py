@@ -103,7 +103,26 @@ class Api(AbstractApi):
     def load(self, response):
         data = []
         if response.text:
-            data = json.loads(response.text, object_hook=self.hook)
+            # data = json.loads(response.text, object_hook=self.hook)
+            rows = json.loads(response.text)
+            # Check if there's duplicated date -> API should return 1 dict per day.
+            seen_dates = set()
+
+            for row in rows:
+                date = row.get('日期')
+
+                if date in seen_dates:
+                    self.LOGGER.warning(
+                        'EIR049 API returned duplicate date: %s; ignoring later row',
+                        date,
+                        extra=self.LOGGER_EXTRA
+                    )
+                    continue
+
+                seen_dates.add(date)
+                # After filter date: then use hook method to wrap raw data.
+                data.append(self.hook(row))
+
         # data should look like [[A,B,C], [A,B,C], ..] after loads
         for lst in data:
             for obj in lst:

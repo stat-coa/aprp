@@ -15,7 +15,9 @@ class Api(AbstractApi):
     API_NAME = 'eir107'
     ZFILL = True
     ROC_FORMAT = False
-    SEP = '/'
+    # SEP = '/'
+    # After 115/10/15, response of API only return the data with '-' in date. Need to mention the agency to unify the return format.
+    SEP = '-'
 
     # Filters
     TRANS_DATE_FILTER = 'transDate+like+%s'
